@@ -139,3 +139,28 @@ test('AI grader: form and spelling come from Pearson bands, not the model', asyn
   assert.equal(measure('sst', 'The speaker discussed climate change, explaining that sea levels rise and that cities must adapt quickly, which shows urgent planning is needed now.').form, 2);
   assert.equal(finalize('sst', { spellingErrors: [1, 2] }, 'x.').traits.spelling, 1);
 });
+
+test('AI grader: improved email is checked against the booklet template and corrected once', async () => {
+  const { templateProblems, default: handler } = await import('../api/grade.js');
+  const prompt = 'Write to your manager.\nRegister: formal\nBullets: Explain which course; Explain the benefit; Suggest how your work will be covered';
+  const good = 'Dear John,\n\nI am writing to request your permission to attend a training course.\n\nFirstly, I would like to attend the two-week Forward Deployed Engineer course next month. Secondly, the course would strengthen our team\'s value to customers, because it teaches the AI and ML skills our clients need. Finally, to cover my work, I will finish my urgent tasks beforehand, and our team has agreed to share half of my assigned tasks while I am away.\n\nI would be grateful if you could approve my request. Please feel free to contact me if you need any further information. Thank you for your time and consideration.\n\nKind regards,\nSudhakar Sajja';
+  const bad = 'Dear John,\n\nI am writing to request attendance at the course.\n\nFirstly, it helps. Secondly, it improves. Additionally, it trains others. Finally, I will split work.\n\nI would be grateful if you could approve my attendance. Please let me know if you need further information. Thank you for your consideration.\n\nKind regards,\nSudhakar Sajja';
+  assert.deepEqual(templateProblems('email', good, prompt), []);
+  assert.ok(templateProblems('email', bad, prompt).length >= 3);
+  process.env.GRADER_API_KEY = 'test'; process.env.GRADER_PROVIDER = 'groq';
+  const saved = globalThis.fetch; const sent = [];
+  globalThis.fetch = async (url, opt) => {
+    const body = JSON.parse(opt.body); sent.push(body);
+    const content = sent.length === 1 ? JSON.stringify({ traits: { content: 3 }, improved: bad }) : JSON.stringify({ improved: good });
+    return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content } }] }) };
+  };
+  const res = { status(c) { this.c = c; return this; }, json(j) { this.j = j; return this; } };
+  await handler({ method: 'POST', headers: {}, body: { task: 'email', prompt, answer: 'Hi John, I want to attend a course.' } }, res);
+  globalThis.fetch = saved; delete process.env.GRADER_API_KEY; delete process.env.GRADER_PROVIDER;
+  assert.equal(res.c, 200);
+  assert.equal(sent.length, 2, 'one correction round');
+  assert.ok(sent[1].messages.at(-1).content.includes('Additionally') || sent[1].messages.at(-1).content.includes('extra point'));
+  assert.equal(res.j.improved, good);
+  assert.equal(res.j.templateOk, true);
+  assert.equal(res.j.traits.content, 3, 'scores from the first pass stand');
+});

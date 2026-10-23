@@ -114,6 +114,31 @@ Best wishes,
   di: '"The chart shows [topic]. The highest is [item] at [number]. The lowest is [item] at [number]. [One more detail or trend]. Overall, [conclusion]."',
 };
 
+// Fixed phrases the improved version must contain, word for word (the booklet's templates).
+const FIXED = {
+  formal: ['I am writing to', 'Firstly,', 'Secondly,', 'Finally,', 'I would be grateful if you could', 'Please feel free to contact me if you need any further information.', 'Thank you for your time and consideration.', 'Kind regards,'],
+  informal: ["I hope you're doing well.", "I'm writing to", 'First of all,', 'Also,', 'On top of that,', 'Let me know what you think.', "Can't wait to hear from you!", 'Best wishes,'],
+  swt: ['The passage explains that', 'highlighting that', 'which suggests that'],
+  sst: ['The speaker discussed', 'explaining that', 'which shows'],
+};
+const norm = (t) => String(t || '').replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
+export const registerOf = (prompt) => (/Register:\s*informal/i.test(prompt || '') ? 'informal' : 'formal');
+
+/** Template rules the improved version breaks (empty list = it follows the template). */
+export function templateProblems(task, improved, prompt) {
+  const key = task === 'email' ? registerOf(prompt) : task;
+  if (!FIXED[key]) return [];
+  const t = norm(improved);
+  const out = FIXED[key].filter((ph) => !t.includes(norm(ph))).map((ph) => `missing the fixed phrase "${ph}"`);
+  if (task === 'email') {
+    if (/\b(Additionally|Moreover|Furthermore|Thirdly|Lastly)\b/.test(t)) out.push('adds an extra point or linker; use exactly three points (Firstly/Secondly/Finally or First of all/Also/On top of that)');
+    const n = countWords(improved);
+    if (n < 90 || n > 120) out.push(`is ${n} words; it must be 100-110`);
+  }
+  if ((task === 'swt' || task === 'sst') && (t.match(/[.!?](\s|$)/g) || []).length > 1) out.push('must be one sentence');
+  return out;
+}
+
 async function authorized(req) {
   const sbUrl = process.env.SUPABASE_URL, sbKey = process.env.SUPABASE_ANON_KEY;
   if (!sbUrl || !sbKey) return true;
@@ -138,8 +163,13 @@ export default async function handler(req, res) {
   const r = RUBRIC[task];
   const m = measure(task, answer);
   const judged = Object.keys(r.max).filter((k) => k !== 'form' && k !== 'spelling');
+  const register = task === 'email' ? registerOf(prompt) : null;
+  const bullets = task === 'email' ? (String(prompt || '').match(/Bullets:\s*(.*)/)?.[1] || '').split(';').map((b) => b.trim()).filter(Boolean) : [];
+  const shape = task === 'email'
+    ? `\nUse the ${register.toUpperCase()} template. ${register === 'formal' ? 'Firstly' : 'First of all'} = bullet 1${bullets[0] ? ` (${bullets[0]})` : ''}, ${register === 'formal' ? 'Secondly' : 'Also'} = bullet 2${bullets[1] ? ` (${bullets[1]})` : ''}, ${register === 'formal' ? 'Finally' : 'On top of that'} = bullet 3${bullets[2] ? ` (${bullets[2]})` : ''}. Exactly three points: no "Additionally" and no extra points. The purpose line states the request only. Do not add ideas the candidate did not write; if a bullet is missing, add one short sentence for it based on the prompt.`
+    : '';
   const template = TEMPLATES[task]
-    ? `\nFor "improved": rewrite the CANDIDATE'S OWN answer into this template. Keep their ideas, facts, names and any correct wording; fix the grammar; fill a missing bullet point from the prompt. Do not invent dates, numbers or other facts. Keep the template's fixed phrases word for word.\nTEMPLATE:\n${TEMPLATES[task]}`
+    ? `\nFor "improved": rewrite the CANDIDATE'S OWN answer into this template. Keep their ideas, facts, names and any correct wording; fix the grammar. Do not invent dates, numbers or other facts. Copy the template's fixed phrases word for word, including the closing lines.${shape}\nTEMPLATE:\n${TEMPLATES[task]}`
     : '\nFor "improved": a corrected version of the candidate\'s own answer, keeping their ideas.';
   const system = `You are an experienced, strict but fair PTE Core rater. Score exactly as Pearson's descriptors say, no harsher and no kinder.
 ${r.text}
@@ -151,36 +181,55 @@ Return ONLY JSON in this order: {"reasons":{${judged.map((k) => `"${k}":"..."`).
   const user = `TASK PROMPT:\n${String(prompt || '').slice(0, 3000)}\n\nCANDIDATE ANSWER:\n${answer}`;
 
   const provider = (process.env.GRADER_PROVIDER || 'anthropic').toLowerCase();
-  let text;
-  try {
+  const model = process.env.GRADER_MODEL || (provider === 'anthropic' ? 'claude-haiku-5-5' : 'openai/gpt-oss-120b');
+
+  // One model call over a conversation; returns the text, or throws {status, error} for the client.
+  async function ask(messages) {
     if (provider === 'anthropic') {
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: process.env.GRADER_MODEL || 'claude-haiku-5-5', max_tokens: 1800, system, messages: [{ role: 'user', content: user }] }),
+        body: JSON.stringify({ model, max_tokens: 1800, system, messages }),
       });
-      if (r.status === 404) return res.status(502).json({ error: 'Grader model not found (404). Set GRADER_MODEL to a current model.' });
-      if (!r.ok) return res.status(502).json({ error: `Grader error (${r.status})` });
+      if (r.status === 404) throw { error: `Grader model "${model}" not found (404). Set GRADER_MODEL to a current model.` };
+      if (!r.ok) throw { error: `Grader error (${r.status})` };
       const j = await r.json();
-      text = j.content?.map((c) => c.text || '').join('') || '';
-    } else {
-      const base = process.env.GRADER_BASE_URL || 'https://api.groq.com/openai/v1';
-      const model = process.env.GRADER_MODEL || 'openai/gpt-oss-120b';
-      const call = (jsonMode) => fetch(`${base}/chat/completions`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model, temperature: 0, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}), messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
-      });
-      let r = await call(true);
-      if (r.status === 400) r = await call(false); // some models reject JSON mode; the prompt already asks for JSON
-      if (r.status === 404) return res.status(502).json({ error: `Grader model "${model}" not found (404). Set GRADER_MODEL to a current model.` });
-      if (!r.ok) return res.status(502).json({ error: `Grader error (${r.status})` });
-      const j = await r.json();
-      text = j.choices?.[0]?.message?.content || '';
+      return j.content?.map((c) => c.text || '').join('') || '';
     }
-    const json = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-    return res.status(200).json(finalize(task, json, answer));
+    const base = process.env.GRADER_BASE_URL || 'https://api.groq.com/openai/v1';
+    const call = (jsonMode) => fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model, temperature: 0, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}), messages: [{ role: 'system', content: system }, ...messages] }),
+    });
+    let r = await call(true);
+    if (r.status === 400) r = await call(false); // some models reject JSON mode; the prompt already asks for JSON
+    if (r.status === 404) throw { error: `Grader model "${model}" not found (404). Set GRADER_MODEL to a current model.` };
+    if (!r.ok) throw { error: `Grader error (${r.status})` };
+    const j = await r.json();
+    return j.choices?.[0]?.message?.content || '';
+  }
+  const parse = (text) => JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+
+  try {
+    const messages = [{ role: 'user', content: user }];
+    const first = await ask(messages);
+    let json = parse(first);
+    let problems = templateProblems(task, json.improved, prompt);
+    if (problems.length) {
+      // One correction round: the model rewrites only "improved"; the scores from the first pass stand.
+      try {
+        const again = parse(await ask([...messages, { role: 'assistant', content: first },
+          { role: 'user', content: `Your "improved" version does not follow the template: it ${problems.join('; it ')}. Rewrite ONLY "improved" so it follows the template exactly. Return ONLY JSON: {"improved":"..."}` }]));
+        if (typeof again.improved === 'string') {
+          const still = templateProblems(task, again.improved, prompt);
+          if (still.length <= problems.length) { json.improved = again.improved; problems = still; }
+        }
+      } catch { /* keep the first version */ }
+    }
+    return res.status(200).json({ ...finalize(task, json, answer), ...(TEMPLATES[task] ? { templateOk: problems.length === 0, templateIssues: problems } : {}) });
   } catch (e) {
+    if (e && e.error) return res.status(502).json({ error: e.error });
     return res.status(502).json({ error: 'Grader returned an unreadable answer. Try again.' });
   }
 }

@@ -16,7 +16,7 @@ export function AiFeedback({ ai }) {
       {ai.reasons && Object.keys(ai.reasons).length > 0 && <ul className="small reasons">{Object.entries(ai.reasons).map(([k, v]) => <li key={k}><b>{k}</b> ({ai.traits?.[k]}/{ai.max?.[k]}): {v}</li>)}</ul>}
       {ai.tip && <p className="small"><b>Most useful change:</b> {ai.tip}</p>}
       {ai.errors?.length > 0 && <ul className="small">{ai.errors.map((e, i) => <li key={i}><s>{e.original}</s> → <b>{e.fix}</b>{e.why ? ` (${e.why})` : ''}</li>)}</ul>}
-      {ai.improved && <details><summary className="small">Improved version (booklet template)</summary><p className="mono small improved">{ai.improved}</p></details>}
+      {ai.improved && <details open><summary className="small">Improved version (booklet template)</summary><p className="mono small improved">{ai.improved}</p>{ai.templateOk === false && <p className="small muted">The rater couldn't fully match the template ({ai.templateIssues.join('; ')}). Use the booklet template for the parts that differ.</p>}</details>}
     </div>
   );
 }
