@@ -1,0 +1,36 @@
+// Respond to a Situation. points: groups of keywords; saying any word in a group covers that point.
+// APPEND ONLY.
+const F = 'formal', I = 'informal';
+const T = [
+["You booked a table for six people at a restaurant on Saturday evening, but two friends can no longer come. Call the restaurant to explain and change your booking.", F, [["four"], ["saturday"], ["change", "update", "reduce", "amend"]]],
+["Your colleague asked you to cover her shift on Friday, but you have a medical appointment. Tell her why you can't help and suggest another option.", I, [["appointment", "doctor", "dentist"], ["friday"], ["instead", "another", "how about", "ask", "maybe"]]],
+["You borrowed a classmate's textbook and accidentally spilled coffee on it. Tell your classmate what happened and offer a solution.", I, [["sorry", "apologize", "apologise"], ["coffee", "spill", "damaged"], ["replace", "new copy", "buy", "pay"]]],
+["Your landlord has not fixed the heating in your apartment for two weeks, and the weather is getting colder. Call your landlord to explain the problem and ask for action.", F, [["heating", "heater"], ["two weeks", "week"], ["fix", "repair", "send", "technician"], ["cold"]]],
+["A new neighbour has just moved into your building. Welcome them and give them some useful information about the area.", I, [["welcome"], ["shop", "grocery", "supermarket", "store", "park", "bus", "station"], ["help", "let me know", "knock", "anything"]]],
+["You missed an important lecture because you were sick. Speak to your professor after class and ask how you can catch up.", F, [["sick", "ill", "unwell"], ["missed", "miss"], ["notes", "slides", "recording", "catch up"]]],
+["Your manager asked you to finish a report by Thursday, but you are waiting for data from another team. Explain the delay and propose a new deadline.", F, [["report"], ["data", "information", "team"], ["friday", "monday", "deadline", "extra day", "more time"]]],
+["Your friend invited you to a birthday party, but you have to work that night. Respond to the invitation.", I, [["thank", "thanks"], ["work", "shift"], ["sorry", "unfortunately"], ["celebrate", "another", "lunch", "dinner", "weekend", "next"]]],
+["You ordered a laptop online and it arrived with a cracked screen. Call customer service to explain and request a solution.", F, [["laptop"], ["cracked", "broken", "damaged"], ["replace", "replacement", "refund"], ["order"]]],
+["Your study group wants to meet on Sunday morning, but you prefer the afternoon. Suggest a change and give a reason.", I, [["sunday"], ["afternoon"], ["because", "since", "as i"]]],
+["A tourist asks you for directions to the nearest train station. Give clear directions.", I, [["straight", "left", "right", "turn"], ["station"], ["minutes", "blocks", "walk"]]],
+["You are organising a team lunch and need to know your colleagues' food preferences. Ask the team.", I, [["lunch"], ["vegetarian", "allerg", "preference", "diet", "food"], ["friday", "tomorrow", "let me know", "by"]]],
+["Your neighbour's dog barks loudly every night and you cannot sleep. Speak politely to your neighbour about the problem.", F, [["dog", "bark"], ["night", "sleep"], ["could", "would", "please", "maybe"]]],
+["You received a job offer, but the start date clashes with your final exams. Call the HR manager to ask if the date can be changed.", F, [["thank", "offer"], ["exam"], ["start", "date", "later", "delay", "change"]]],
+["Your child's teacher wants to meet you on Tuesday at three o'clock, but you are working then. Ask for another time.", F, [["tuesday"], ["work", "working", "meeting"], ["another", "alternative", "wednesday", "thursday", "morning", "evening", "online"]]],
+["A colleague helped you finish a difficult project. Thank them and offer something in return.", I, [["thank", "appreciate"], ["project"], ["coffee", "lunch", "help you", "return", "owe"]]],
+["You are going to be late for a job interview because your bus broke down. Call the company to explain.", F, [["sorry", "apologize", "apologise"], ["bus", "traffic", "transport"], ["minutes", "late", "arrive"], ["still", "reschedule", "another time"]]],
+["Your gym membership was charged twice this month. Call the gym to sort out the problem.", F, [["charge", "payment"], ["twice", "two", "double"], ["refund", "reverse", "correct"]]],
+["A classmate keeps arriving late to group meetings, which delays everyone. Talk to them about it.", I, [["late"], ["meeting", "group"], ["could", "please", "time", "start"]]],
+["You want to join a local volunteer program but don't know how to apply. Call the organisation to ask.", F, [["volunteer"], ["apply", "application", "sign up", "register"], ["requirement", "training", "hours", "when"]]],
+["Your friend is nervous about a job interview tomorrow. Give them some advice.", I, [["prepare", "practise", "practice"], ["research", "company"], ["sleep", "relax", "calm", "confident"]]],
+["The printer in your office has stopped working and you need to print documents for a client meeting in an hour. Call IT support.", F, [["printer"], ["client", "meeting"], ["hour", "urgent", "soon", "quickly"]]],
+["You found a wallet on the bus. Call the transit company's lost and found office to report it.", F, [["wallet"], ["bus", "route"], ["found", "hand", "return", "drop"]]],
+["Your roommate leaves dirty dishes in the sink every day. Talk to them and suggest a solution.", I, [["dishes", "kitchen", "sink"], ["every day", "always", "often"], ["schedule", "turns", "plan", "rota"]]],
+["Your flight was cancelled and you need to reach a family wedding tomorrow. Speak to the airline agent.", F, [["cancel"], ["wedding", "tomorrow"], ["next", "another", "alternative", "rebook", "seat"]]],
+["You want to ask your manager for two days off next month to attend a family event.", F, [["two days", "days off", "leave"], ["month"], ["family", "event"], ["cover", "arrange", "finish", "before"]]],
+["A shop assistant gave you the wrong change. Politely point out the mistake.", F, [["change"], ["mistake", "wrong", "short", "incorrect"], ["could", "please", "check"]]],
+["Your friend wants to borrow your car for the weekend, but you need it on Saturday. Respond to your friend.", I, [["car"], ["saturday"], ["sunday", "friday", "after", "instead", "could", "maybe"]]],
+["You are a new student and can't find your classroom. Ask a staff member for help.", F, [["new", "first day"], ["classroom", "room", "class"], ["where", "find", "directions", "help"]]],
+["Your team member did excellent work on a presentation. Give them positive feedback.", I, [["great", "excellent", "fantastic", "well done", "impressive", "good job"], ["presentation", "slides"], ["clear", "design", "delivery", "data", "examples"]]],
+];
+export default T.map(([text, register, points], i) => ({ id: 'n' + String(i + 1).padStart(3, '0'), text, register, points }));
