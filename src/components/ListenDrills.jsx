@@ -165,7 +165,18 @@ export function ReorderDrill({ items, bank, day, dayAttempts, onAttempt, setting
   return (
     <section className="card">
       <div className="cardhead"><h2>Reorder Paragraph{focus ? ' · focus drill' : ''}</h2><span className="muted small">Item {idx + 1} of {items.length} · {doneCount} done</span></div>
-      <div className="how"><b>Reading.</b> Tap the sentences in the right order. Find the opener first: it makes sense alone and doesn't start with "This", "However" or a pronoun. Then pair sentences by pronouns, linking words and time order. Tap a placed sentence to remove it.</div>
+      <div className="how">
+        <b>Reading.</b> Tap the sentences in the right order (tap a placed sentence to remove it). Points come from correct neighbouring pairs, so one misplaced sentence can cost every point.
+        <details className="tips"><summary>How to find the order: 5 tests</summary>
+          <ol>
+            <li><b>Opener</b> (first 20 s): it needs nothing before it. Reject sentences with <i>however, this, these, such, they, it</i>, <i>the + a noun already mentioned</i> ("the decline") or <i>causes / effects</i> of something unnamed. An opener often names the topic in full ("Pollinators such as bees…") or gives an old view ("Wetlands were <b>once</b> considered…").</li>
+            <li><b>Pronouns</b>: a sentence with <i>it, they, them, this, these</i> goes right after the sentence that names that noun. "Before <b>it</b> existed" comes straight after "the printing press".</li>
+            <li><b>Time</b>: before → when / once → after / since then → now / today. "Once" has two meanings: <i>as soon as</i> (after a change, later) or <i>in the past</i> (the old view, early). Swap in "as soon as" or "in the past" to tell them apart.</li>
+            <li><b>Claim → evidence</b>: the claim (<i>most valuable, essential, a major problem</i>) comes before the sentence listing what something does or examples that prove it.</li>
+            <li><b>Problem → causes → effects → solution</b>: <i>Encouragingly, Therefore, Overall, As a result</i> usually come last. A mid-sentence "however" still contrasts with the sentence just before it.</li>
+          </ol>
+        </details>
+      </div>
       {item.kind && item.kind !== 'new' && <Chip tone={item.kind === 'review' ? 'warn' : ''}>{KIND_LABEL[item.kind]}</Chip>}
       {!res && <div className="btnrow"><Timer start={t0} countdown={PACE.ro.secs} onExpire={strict(settings, focus) ? () => check(true) : undefined} /></div>}
       <div className="reorder">

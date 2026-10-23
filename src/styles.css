@@ -116,6 +116,10 @@ audio { height: 36px; max-width: 100%; }
 .examples .mono { font-size: .9rem; }
 .improved { white-space: pre-wrap; line-height: 1.6; }
 .reasons { margin: 6px 0; padding-left: 18px; }
+.how .tips { margin-top: 6px; }
+.how .tips summary { cursor: pointer; font-weight: 600; }
+.how .tips ol { margin: 6px 0 2px; padding-left: 20px; }
+.how .tips li { margin: 3px 0; }
 .wordrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0; }
 .wordrow .mono { min-width: 140px; font-weight: 600; }
 .workout, .sprint { display: grid; gap: 8px; }
