@@ -36,6 +36,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
   const [res, setRes] = useState(null);
   const [ai, setAi] = useState(null);
   const [grading, setGrading] = useState(false);
+  const [saved, setSaved] = useState(null); // the logged attempt, so AI feedback can be attached to it
   const [started, setStarted] = useState(task !== 'sst');
   const [t0, setT0] = useState(Date.now());
 
@@ -44,6 +45,8 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
     setText(prev ? prev.response : '');
     setRes(prev ? prev.meta?.judged || null : null);
     setAi(prev?.meta?.ai || null);
+    setSaved(prev || null);
+    setGrading(false);
     setStarted(task !== 'sst' || !!prev);
     setT0(Date.now());
     return () => stopVoice();
@@ -61,15 +64,19 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
     const j = task === 'swt' ? judgeSwt(text, src) : task === 'sst' ? judgeSst(text, src) : judgeEmail(text, src);
     const judged = { checks: j.checks, cov: j.cov, n: j.n, timedOut };
     setRes(judged);
-    const saved = await onAttempt({ day, task, item_id: item.id, focus, response: text, score: j.score, total: j.total,
+    const row = await onAttempt({ day, task, item_id: item.id, focus, response: text, score: j.score, total: j.total,
       meta: { judged, timedOut, seconds: Math.round((Date.now() - t0) / 1000) } });
-    if (text.trim() && !graderKnownOff()) {
-      setGrading(true);
-      const prompt = task === 'email' ? `${src.text}\nRegister: ${src.register}\nBullets: ${src.bullets.map((b) => b.label).join('; ')}` : src.text;
-      const g = await gradeAnswer(task, prompt, text);
-      setGrading(false);
-      if (g) { setAi(g); if (!g.error && saved) await onPatch?.(saved, { ai: g }); }
-    }
+    setSaved(row || null);
+    if (text.trim() && !graderKnownOff()) await grade(row, text);
+  }
+
+  async function grade(row = saved, answer = text) {
+    if (!answer.trim() || grading) return;
+    setGrading(true); setAi(null);
+    const prompt = task === 'email' ? `${src.text}\nRegister: ${src.register}\nBullets: ${src.bullets.map((b) => b.label).join('; ')}` : src.text;
+    const g = await gradeAnswer(task, prompt, answer);
+    setGrading(false);
+    if (g) { setAi(g); if (!g.error && row) await onPatch?.(row, { ai: g }); }
   }
 
   const n = wordCount(text);
@@ -111,6 +118,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
           {task === 'sst' && <details><summary className="small">Show the lecture text</summary><p className="small">{src.text}</p></details>}
           {grading && <p className="small muted">AI rater is reading your answer…</p>}
           {ai && <AiFeedback ai={ai} />}
+          {!grading && (!ai || ai.error) && text.trim() && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai?.error ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
           {!ai && !grading && graderKnownOff() && <p className="small muted">Grammar and vocabulary marking needs the optional AI rater (see README).</p>}
         </div>
       )}

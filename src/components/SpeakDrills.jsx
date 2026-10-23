@@ -3,7 +3,7 @@ import { speak, stopVoice, voiceFor } from '../lib/voice.js';
 import { startTake } from '../lib/assess.js';
 import { beep } from '../lib/mic.js';
 import { judgeDi, judgeRts, judgeAsq } from '../lib/judge.js';
-import { gradeAnswer } from '../lib/grader.js';
+import { gradeAnswer, graderKnownOff } from '../lib/grader.js';
 import { Chip, RecBar, useDoneMap, KIND_LABEL, tone } from './common.jsx';
 import { Nav, Checks } from './bits.jsx';
 import Chart from './Chart.jsx';
@@ -37,6 +37,8 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
   const [elapsed, setElapsed] = useState(0);
   const [out, setOut] = useState(null);
   const [ai, setAi] = useState(null);
+  const [grading, setGrading] = useState(false);
+  const [saved, setSaved] = useState(null);
   const [error, setError] = useState('');
   const runRef = useRef(0), takeRef = useRef(null), prepRef = useRef(null);
 
@@ -44,7 +46,7 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
     const prev = doneMap[item.id];
     setPhase(prev ? 'done' : 'idle');
     setOut(prev ? { heard: prev.response, judged: prev.meta?.judged, take: prev.meta?.take || { pauses: [] } } : null);
-    setAi(prev?.meta?.ai || null); setError('');
+    setAi(prev?.meta?.ai || null); setError(''); setSaved(prev || null); setGrading(false);
     return () => { runRef.current++; clearInterval(prepRef.current); takeRef.current?.stop(); stopVoice(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
@@ -76,13 +78,19 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
     setOut({ heard, judged, take: { ...slim, audioUrl: t.audioUrl } });
     setPhase('done');
     if (t.error) setError('Speech service: ' + t.error);
-    const saved = await onAttempt({ day, task, item_id: item.id, focus, response: heard, score: t.micClosed ? 0 : judged.score, total: judged.total,
+    const row = await onAttempt({ day, task, item_id: item.id, focus, response: heard, score: t.micClosed ? 0 : judged.score, total: judged.total,
       meta: { engine: t.engine, take: slim, judged: { checks: judged.checks }, scores: t.scores, pauses: t.pauses, latencyMs: t.latencyMs, micClosed: t.micClosed } });
-    if (heard && !t.micClosed) {
-      const g = await gradeAnswer(task, task === 'di' ? `Describe this chart: ${src.title} (${src.unit}). Labels: ${src.labels.join(', ')}. ${src.values ? 'Values: ' + src.values.join(', ') : src.series.map((s) => s.name + ': ' + s.values.join(', ')).join('; ')}` : src.text, heard);
-      if (g) setAi(g);
-      if (g && !g.error && saved) await onPatch?.(saved, { ai: g });
-    }
+    setSaved(row || null);
+    if (heard && !t.micClosed) await grade(row, heard);
+  }
+
+  async function grade(row = saved, heard = out?.heard || '') {
+    if (!heard) return;
+    setGrading(true); setAi(null);
+    const g = await gradeAnswer(task, task === 'di' ? `Describe this chart: ${src.title} (${src.unit}). Labels: ${src.labels.join(', ')}. ${src.values ? 'Values: ' + src.values.join(', ') : src.series.map((s) => s.name + ': ' + s.values.join(', ')).join('; ')}` : src.text, heard);
+    setGrading(false);
+    if (g) setAi(g);
+    if (g && !g.error && row) await onPatch?.(row, { ai: g });
   }
 
   const label = phase === 'listening' ? 'Listening…' : phase === 'prep' ? 'Prepare · ' + Math.max(0, Math.ceil((PREP - elapsed) / 1000)) + ' s'
@@ -113,7 +121,9 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
           {out.judged?.checks && <Checks checks={out.judged.checks} />}
           <p className="small muted">Heard: “{out.heard || '(nothing)'}”</p>
           {out.take?.audioUrl && <audio controls src={out.take.audioUrl} />}
+          {grading && <p className="small muted">AI rater is listening to your answer…</p>}
           {ai && <AiFeedback ai={ai} />}
+          {!grading && (!ai || ai.error) && out.heard && !out.take?.micClosed && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai?.error ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
         </div>
       )}
       <Nav idx={idx} setIdx={setIdx} n={items.length} onFinish={onFinish} focus={focus} />
