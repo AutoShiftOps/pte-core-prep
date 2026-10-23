@@ -176,3 +176,16 @@ test('AI grader: same word count as the app, and content cannot be 0 when every 
   assert.equal(out.measured.keyPoints, '5/5');
   assert.equal(finalize('swt', { traits: { content: 0 } }, swt, { coverage: { hit: 3, total: 5 } }).traits.content, 0, 'no floor when points are missing');
 });
+
+test('stale build after a deploy: reload once, never loop', async () => {
+  const store = {}; let reloads = 0;
+  globalThis.sessionStorage = { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; } };
+  globalThis.window = { location: { reload: () => { reloads++; } } };
+  const { isStaleChunk, reloadOnce } = await import('../src/lib/stale.js');
+  assert.ok(isStaleChunk(new TypeError('Failed to fetch dynamically imported module: https://x/assets/microsoft.cognitiveservices.speech.sdk-DeWGopdm.js')));
+  assert.ok(!isStaleChunk(new Error('Microphone permission denied')));
+  assert.equal(reloadOnce(), true);
+  assert.equal(reloadOnce(), false, 'second failure within a minute does not reload again');
+  assert.equal(reloads, 1);
+  delete globalThis.sessionStorage; delete globalThis.window;
+});

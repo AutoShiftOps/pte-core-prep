@@ -1,3 +1,4 @@
+import { isStaleChunk, reloadOnce } from './stale.js';
 // Azure Speech: the key stays on the server; the browser gets a 10-minute token
 // from /api/speech-token (Vercel function), same pattern as FrenchFry.
 
@@ -36,6 +37,12 @@ export async function checkAzure() {
 export const azureStatus = () => status;
 
 export function loadSdk() {
-  if (!sdkPromise) sdkPromise = import('microsoft-cognitiveservices-speech-sdk');
+  if (!sdkPromise) {
+    sdkPromise = import('microsoft-cognitiveservices-speech-sdk').catch((e) => {
+      sdkPromise = null; // let the next attempt retry
+      if (isStaleChunk(e) && reloadOnce()) return new Promise(() => {}); // page is reloading onto the new build
+      throw e;
+    });
+  }
   return sdkPromise;
 }
