@@ -1,7 +1,8 @@
 // Optional AI grader for open answers (summaries, email, spoken responses).
 // Enabled only when GRADER_API_KEY is set. Providers:
 //   GRADER_PROVIDER=anthropic  (default model claude-haiku-5-5)
-//   GRADER_PROVIDER=groq       (OpenAI-compatible; default model llama-3.3-70b-versatile)
+//   GRADER_PROVIDER=groq       (OpenAI-compatible; default model openai/gpt-oss-120b —
+//                               llama-3.3-70b-versatile was retired by Groq on 2026-08-16)
 // Same sign-in check as /api/speech-token.
 
 const TASK_RULES = {
@@ -47,16 +48,21 @@ List at most 5 errors (grammar, spelling, word choice). Use Canadian or British 
         headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: JSON.stringify({ model: process.env.GRADER_MODEL || 'claude-haiku-5-5', max_tokens: 900, system, messages: [{ role: 'user', content: user }] }),
       });
+      if (r.status === 404) return res.status(502).json({ error: 'Grader model not found (404). Set GRADER_MODEL to a current model.' });
       if (!r.ok) return res.status(502).json({ error: `Grader error (${r.status})` });
       const j = await r.json();
       text = j.content?.map((c) => c.text || '').join('') || '';
     } else {
       const base = process.env.GRADER_BASE_URL || 'https://api.groq.com/openai/v1';
-      const r = await fetch(`${base}/chat/completions`, {
+      const model = process.env.GRADER_MODEL || 'openai/gpt-oss-120b';
+      const call = (jsonMode) => fetch(`${base}/chat/completions`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: process.env.GRADER_MODEL || 'llama-3.3-70b-versatile', temperature: 0, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+        body: JSON.stringify({ model, temperature: 0, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}), messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
       });
+      let r = await call(true);
+      if (r.status === 400) r = await call(false); // some models reject JSON mode; the prompt already asks for JSON
+      if (r.status === 404) return res.status(502).json({ error: `Grader model "${model}" not found (404). Set GRADER_MODEL to a current model.` });
       if (!r.ok) return res.status(502).json({ error: `Grader error (${r.status})` });
       const j = await r.json();
       text = j.choices?.[0]?.message?.content || '';

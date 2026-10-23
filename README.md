@@ -51,7 +51,7 @@ Not in the app: full section mocks and multiple-choice tasks. Use the official P
    - `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` (copy from FrenchFry's Vercel settings)
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY` (same values, used by the token function)
    - `ALLOWED_EMAIL` (your email: nobody else can use your Azure quota)
-   - Optional: `GRADER_API_KEY`, `GRADER_PROVIDER` (`anthropic` or `groq`), `GRADER_MODEL`
+   - Optional: `GRADER_API_KEY`, `GRADER_PROVIDER` (`anthropic` or `groq`; Groq defaults to `openai/gpt-oss-120b`), `GRADER_MODEL`
 4. Deploy, open the site in **Chrome or Edge**, sign in with the email link, go to **Settings → Test my microphone**.
 5. Optional: Supabase → Authentication → disable new sign-ups after your first sign-in.
 
@@ -69,4 +69,3 @@ Local run: `npm install`, then `npx vercel dev` (runs the `/api/speech-token` fu
 ## Ask Claude to review your week
 
 Settings → **Copy log for Claude**, or run in Supabase: `select * from daily_scorecard order by day desc limit 14;`
-# pte-core-prep
