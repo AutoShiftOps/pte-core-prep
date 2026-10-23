@@ -12,7 +12,7 @@ export function AiFeedback({ ai }) {
     <div className="aibox">
       <div className="eyebrow">AI rater (grammar, vocabulary, appropriacy)</div>
       {ai.traits && <div className="tags">{ai.total != null && <Chip tone={ai.total >= ai.outOf ? 'good' : 'warn'}>Total {ai.total}/{ai.outOf}</Chip>}{Object.entries(ai.traits).map(([k, v]) => <Chip key={k} tone={ai.max?.[k] && v >= ai.max[k] ? 'good' : 'warn'}>{k}: {v}{ai.max?.[k] ? '/' + ai.max[k] : ''}</Chip>)}</div>}
-      {ai.measured && <p className="small muted">Measured by the app: {ai.measured.words} words{ai.measured.spellingErrors != null ? ` · ${ai.measured.spellingErrors} spelling error${ai.measured.spellingErrors === 1 ? '' : 's'} found` : ''}. Form{ai.measured.spellingErrors != null ? ' and spelling are' : ' is'} scored with Pearson's published bands.</p>}
+      {ai.measured && <p className="small muted">Measured by the app: {ai.measured.words} words (hyphenated words count as two, to stay safely under the limit){ai.measured.keyPoints ? ` · key points ${ai.measured.keyPoints}` : ''}{ai.measured.spellingErrors != null ? ` · ${ai.measured.spellingErrors} spelling error${ai.measured.spellingErrors === 1 ? '' : 's'} found` : ''}. Form{ai.measured.spellingErrors != null ? ' and spelling are' : ' is'} scored with Pearson's published bands.</p>}
       {ai.reasons && Object.keys(ai.reasons).length > 0 && <ul className="small reasons">{Object.entries(ai.reasons).map(([k, v]) => <li key={k}><b>{k}</b> ({ai.traits?.[k]}/{ai.max?.[k]}): {v}</li>)}</ul>}
       {ai.tip && <p className="small"><b>Most useful change:</b> {ai.tip}</p>}
       {ai.errors?.length > 0 && <ul className="small">{ai.errors.map((e, i) => <li key={i}><s>{e.original}</s> → <b>{e.fix}</b>{e.why ? ` (${e.why})` : ''}</li>)}</ul>}
@@ -78,7 +78,11 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
     if (!answer.trim() || grading) return;
     setGrading(true); setAi(null);
     const prompt = task === 'email' ? `${src.text}\nRegister: ${src.register}\nBullets: ${src.bullets.map((b) => b.label).join('; ')}` : src.text;
-    const g = await gradeAnswer(task, prompt, answer);
+    const j = task === 'swt' ? judgeSwt(answer, src) : task === 'sst' ? judgeSst(answer, src) : judgeEmail(answer, src);
+    const g = await gradeAnswer(task, prompt, answer, {
+      reference: src.model || '',
+      coverage: { hit: (j.cov || []).filter(Boolean).length, total: (j.cov || []).length },
+    });
     setGrading(false);
     if (g) { setAi(g); if (!g.error && row) await onPatch?.(row, { ai: g }); }
   }

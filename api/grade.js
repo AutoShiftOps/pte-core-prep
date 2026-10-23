@@ -25,6 +25,7 @@ grammar 2: generally consistent control with only occasional errors | 1: fair co
     form: (n) => band(n, (x) => x >= 25 && x <= 50, (x) => (x >= 5 && x <= 24) || (x >= 51 && x <= 60)),
     text: `PTE Core Summarize Written Text. Official descriptors:
 content 2: good summary, all relevant aspects mentioned | 1: fair summary, misses one or two aspects | 0: omits or misrepresents the main aspects.
+"Aspects" means the MAIN aspects: the main idea, the key supporting points and the conclusion. A summary is meant to leave out examples, lists, figures and minor details; leaving them out must never lower content.
 grammar 2: correct grammatical structure | 1: errors but no hindrance to communication | 0: defective structure that could hinder communication.
 vocabulary 2: appropriate choice of words | 1: lexical errors but no hindrance | 0: defective word choice that could hinder communication.`,
   },
@@ -34,6 +35,7 @@ vocabulary 2: appropriate choice of words | 1: lexical errors but no hindrance |
     spelling: (k) => (k <= 1 ? 2 : k <= 3 ? 1 : 0),
     text: `PTE Core Summarize Spoken Text (a lecture summary). Official descriptors:
 content 2: good summary, all relevant aspects mentioned | 1: fair summary, one or two aspects missing | 0: omits or misrepresents the main aspects.
+"Aspects" means the MAIN aspects of the lecture: topic, key points and conclusion. Leaving out examples, figures and minor details is correct summarising and must never lower content.
 grammar 2: correct structures | 1: errors with no hindrance to communication | 0: defective structure that could hinder communication.
 vocabulary 2: appropriate choice of words | 1: some lexical errors, no hindrance | 0: defective word choice.`,
   },
@@ -47,7 +49,9 @@ vocabulary 2: appropriate choice of words | 1: some lexical errors, no hindrance
   },
 };
 
-export const countWords = (s) => String(s || '').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length;
+// Same rule as the app's checklist: hyphenated words count as two ("four-day" = 2). That is the safe
+// side of Pearson's upper limits: an answer that passes here cannot be over the limit in the test.
+export const countWords = (s) => String(s || '').replace(/[-–—]/g, ' ').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length;
 
 /** Form score as Pearson defines it, plus the capital-letters / no-punctuation rule. */
 export function measure(task, answer) {
@@ -61,7 +65,7 @@ export function measure(task, answer) {
 }
 
 /** Clamp the model's scores to the official maxima and replace countable traits with measured ones. */
-export function finalize(task, raw, answer) {
+export function finalize(task, raw, answer, opts = {}) {
   const r = RUBRIC[task];
   const m = measure(task, answer);
   const traits = {};
@@ -70,6 +74,11 @@ export function finalize(task, raw, answer) {
     traits[k] = Number.isFinite(v) ? Math.max(0, Math.min(mx, Math.round(v))) : 0;
   }
   if ('form' in r.max) traits.form = m.form;
+  // Pearson's content 0 = "omits or misrepresents the main aspects". If the app's key-point check found every
+  // main point, 0 contradicts the descriptor: floor it at 1 (the model may still give the full mark).
+  const cov = opts.coverage;
+  const allPoints = cov && cov.total > 0 && cov.hit >= cov.total;
+  if (allPoints && 'content' in traits && traits.content === 0) traits.content = 1;
   const spellingErrors = Array.isArray(raw?.spellingErrors) ? raw.spellingErrors.slice(0, 20) : [];
   if (r.spelling) traits.spelling = r.spelling(spellingErrors.length);
   const total = Object.values(traits).reduce((a, b) => a + b, 0);
@@ -77,7 +86,7 @@ export function finalize(task, raw, answer) {
   return {
     traits, max: r.max, total, outOf: max,
     reasons: raw?.reasons || {},
-    measured: { words: m.words, ...(r.spelling ? { spellingErrors: spellingErrors.length } : {}) },
+    measured: { words: m.words, ...(r.spelling ? { spellingErrors: spellingErrors.length } : {}), ...(opts.coverage?.total ? { keyPoints: `${opts.coverage.hit}/${opts.coverage.total}` } : {}) },
     errors: Array.isArray(raw?.errors) ? raw.errors.slice(0, 8) : [],
     improved: typeof raw?.improved === 'string' ? raw.improved : '',
     tip: typeof raw?.tip === 'string' ? raw.tip : '',
@@ -157,7 +166,8 @@ export default async function handler(req, res) {
   if (!key) return res.status(501).json({ error: 'AI grading is not configured' });
   if (!(await authorized(req))) return res.status(401).json({ error: 'Sign in first' });
 
-  const { task, prompt, answer } = req.body || {};
+  const { task, prompt, answer, reference, coverage } = req.body || {};
+  const cov = coverage && Number.isFinite(coverage.hit) && Number.isFinite(coverage.total) ? { hit: coverage.hit, total: coverage.total } : null;
   if (!RUBRIC[task] || typeof answer !== 'string' || answer.length > 4000) return res.status(400).json({ error: 'Bad request' });
 
   const r = RUBRIC[task];
@@ -173,7 +183,7 @@ export default async function handler(req, res) {
     : '\nFor "improved": a corrected version of the candidate\'s own answer, keeping their ideas.';
   const system = `You are an experienced, strict but fair PTE Core rater. Score exactly as Pearson's descriptors say, no harsher and no kinder.
 ${r.text}
-MEASURED BY SOFTWARE (correct, do not re-count): ${m.words} words${'form' in m ? `; form = ${m.form}/2 (already scored)` : ''}.${r.spelling ? '\nList EVERY spelling or typing error (a misspelt or mistyped word, not a grammar error) in "spellingErrors"; spelling is scored from that count.' : ''}
+MEASURED BY SOFTWARE (correct, do not re-count): ${m.words} words${'form' in m ? `; form = ${m.form}/2 (already scored)` : ''}${cov ? `; the app's key-point check found ${cov.hit} of ${cov.total} main points` : ''}.${reference && task !== 'email' ? `\nREFERENCE SUMMARY (an expert answer that earns full content marks; an answer covering the same main aspects also earns 2, whatever its wording): ${String(reference).slice(0, 600)}` : ''}${r.spelling ? '\nList EVERY spelling or typing error (a misspelt or mistyped word, not a grammar error) in "spellingErrors"; spelling is scored from that count.' : ''}
 Fixed template phrases (greetings, "I am writing to", "Firstly/Secondly/Finally", closing lines) are acceptable; only penalise memorised material when it replaces content about this prompt.
 For each trait you score, first write a reason of at most 15 words that quotes evidence from the answer, then the score.
 Return ONLY JSON in this order: {"reasons":{${judged.map((k) => `"${k}":"..."`).join(',')}},"traits":{${judged.map((k) => `"${k}":<0-${r.max[k]}>`).join(',')}},${r.spelling ? '"spellingErrors":[{"wrong":"...","right":"..."}],' : ''}"errors":[{"original":"...","fix":"...","why":"..."}],"improved":"<use \\n for line breaks>","tip":"<one sentence on the single most useful change>"}.
@@ -227,7 +237,7 @@ Return ONLY JSON in this order: {"reasons":{${judged.map((k) => `"${k}":"..."`).
         }
       } catch { /* keep the first version */ }
     }
-    return res.status(200).json({ ...finalize(task, json, answer), ...(TEMPLATES[task] ? { templateOk: problems.length === 0, templateIssues: problems } : {}) });
+    return res.status(200).json({ ...finalize(task, json, answer, { coverage: cov }), ...(TEMPLATES[task] ? { templateOk: problems.length === 0, templateIssues: problems } : {}) });
   } catch (e) {
     if (e && e.error) return res.status(502).json({ error: e.error });
     return res.status(502).json({ error: 'Grader returned an unreadable answer. Try again.' });

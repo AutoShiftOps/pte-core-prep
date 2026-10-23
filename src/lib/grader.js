@@ -5,13 +5,13 @@ let available = null; // null = unknown, true/false after first call
 export function setGraderJwt(fn) { jwtProvider = fn; }
 export const graderKnownOff = () => available === false;
 
-export async function gradeAnswer(task, prompt, answer) {
+export async function gradeAnswer(task, prompt, answer, extra = {}) {
   if (available === false) return null;
   const jwt = await jwtProvider();
   const r = await fetch('/api/grade', {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(jwt ? { Authorization: 'Bearer ' + jwt } : {}) },
-    body: JSON.stringify({ task, prompt, answer }),
+    body: JSON.stringify({ task, prompt, answer, ...extra }),
   }).catch(() => null);
   if (!r || r.status === 501 || r.status === 404) { available = false; return null; }
   available = true;

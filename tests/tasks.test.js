@@ -164,3 +164,15 @@ test('AI grader: improved email is checked against the booklet template and corr
   assert.equal(res.j.templateOk, true);
   assert.equal(res.j.traits.content, 3, 'scores from the first pass stand');
 });
+
+test('AI grader: same word count as the app, and content cannot be 0 when every main point is covered', async () => {
+  const { finalize, countWords } = await import('../api/grade.js');
+  const { wordCount } = await import('../src/lib/judge.js');
+  const swt = 'The passage explains that companies trialled a four-day working week for the same pay, highlighting that it improved wellbeing, productivity and reduced burnout, and that it does not suit sectors needing continuous coverage, which suggests that it works best where output is measurable and teams can redesign their work.';
+  assert.equal(countWords(swt), wordCount(swt));
+  assert.equal(countWords(swt), 50);
+  const out = finalize('swt', { traits: { content: 0, grammar: 2, vocabulary: 2 } }, swt, { coverage: { hit: 5, total: 5 } });
+  assert.equal(out.traits.content, 1);
+  assert.equal(out.measured.keyPoints, '5/5');
+  assert.equal(finalize('swt', { traits: { content: 0 } }, swt, { coverage: { hit: 3, total: 5 } }).traits.content, 0, 'no floor when points are missing');
+});
