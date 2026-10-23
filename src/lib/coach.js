@@ -242,7 +242,7 @@ const TIME_TIPS = {
 const TIPS = {
   rwfib: 'Read three words before and after each gap: most answers are fixed pairs. Your misses are in Word pairs; review them before tomorrow.',
   rfib: 'Decide the part of speech first, then meaning. Place the words you are sure of first; the leftovers narrow the hard gaps.',
-  ro: 'Opener first (needs nothing before it), then the tests: pronoun right after its noun, time order (before → once → now), claim before evidence, solution last.',
+  ro: 'Opener first (needs nothing before it), then the tests: pronoun right after its noun, time order (before → once → now), claim before evidence, rule before exception, solution last. Name the link word for every pair before you tap.',
   lfib: 'Read the text before the audio starts and guess each gap\'s part of speech. Check plural -s and spelling before submitting.',
   hiw: 'Keep your cursor under the word being spoken. Only click when the word clearly differs; wrong clicks cost a point.',
   sst: 'Note nouns and numbers only, then use the template. Stay within 20–30 words.',

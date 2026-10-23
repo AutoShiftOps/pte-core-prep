@@ -167,14 +167,16 @@ export function ReorderDrill({ items, bank, day, dayAttempts, onAttempt, setting
       <div className="cardhead"><h2>Reorder Paragraph{focus ? ' · focus drill' : ''}</h2><span className="muted small">Item {idx + 1} of {items.length} · {doneCount} done</span></div>
       <div className="how">
         <b>Reading.</b> Tap the sentences in the right order (tap a placed sentence to remove it). Points come from correct neighbouring pairs, so one misplaced sentence can cost every point.
-        <details className="tips"><summary>How to find the order: 5 tests</summary>
+        <details className="tips"><summary>How to find the order: 6 tests</summary>
           <ol>
             <li><b>Opener</b> (first 20 s): it needs nothing before it. Reject sentences with <i>however, this, these, such, they, it</i>, <i>the + a noun already mentioned</i> ("the decline") or <i>causes / effects</i> of something unnamed. An opener often names the topic in full ("Pollinators such as bees…") or gives an old view ("Wetlands were <b>once</b> considered…").</li>
             <li><b>Pronouns</b>: a sentence with <i>it, they, them, this, these</i> goes right after the sentence that names that noun. "Before <b>it</b> existed" comes straight after "the printing press".</li>
             <li><b>Time</b>: before → when / once → after / since then → now / today. "Once" has two meanings: <i>as soon as</i> (after a change, later) or <i>in the past</i> (the old view, early). Swap in "as soon as" or "in the past" to tell them apart.</li>
             <li><b>Claim → evidence</b>: the claim (<i>most valuable, essential, a major problem</i>) comes before the sentence listing what something does or examples that prove it.</li>
             <li><b>Problem → causes → effects → solution</b>: <i>Encouragingly, Therefore, Overall, As a result</i> usually come last. A mid-sentence "however" still contrasts with the sentence just before it.</li>
+            <li><b>Rule → exception</b>: the normal case first, then the twist (<i>When problems arise, If…, In some cases, Sometimes, Unfortunately</i>). Watch for <i>the + noun</i> that means "already mentioned": <i>the original plan, the problem, the change, this approach</i>.</li>
           </ol>
+          <p><b>Name the link before you tap:</b> for each pair, say the clue out loud ("<i>it</i> = the printing press", "<i>the original plan</i> = the timelines"). No link word for a pair means that pair is probably wrong.</p>
         </details>
       </div>
       {item.kind && item.kind !== 'new' && <Chip tone={item.kind === 'review' ? 'warn' : ''}>{KIND_LABEL[item.kind]}</Chip>}
