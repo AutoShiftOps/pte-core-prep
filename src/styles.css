@@ -114,6 +114,8 @@ audio { height: 36px; max-width: 100%; }
 .cat { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; }
 .examples { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
 .examples .mono { font-size: .9rem; }
+.improved { white-space: pre-wrap; line-height: 1.6; }
+.reasons { margin: 6px 0; padding-left: 18px; }
 .wordrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0; }
 .wordrow .mono { min-width: 140px; font-weight: 600; }
 .workout, .sprint { display: grid; gap: 8px; }

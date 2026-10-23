@@ -73,7 +73,7 @@ export function judgeEmail(text, item) {
   const cov = coverage(text, item.bullets.map((b) => b.kw));
   const contractions = (text.match(/\b\w+'(t|re|ll|ve|m|d)\b/gi) || []).length;
   const checks = [
-    { ok: n >= 80 && n <= 120, label: `Word count ${n} (aim for 80–120)`, fatal: n < 50 || n > 140 },
+    { ok: n >= 80 && n <= 120, label: `Word count ${n} (aim for 100–110; Pearson gives full form marks for 50–120)`, fatal: n < 50 || n > 140 },
     { ok: /^(dear|hi|hello)\b/i.test(firstLine), label: 'Opens with a greeting (Dear… / Hi…)' },
     { ok: /(regards|sincerely|best wishes|best,|cheers|take care|yours|thanks|thank you)/i.test(lines.slice(-3).join(' ')), label: 'Closes with a sign-off' },
     { ok: paragraphs >= 3, label: `${paragraphs} paragraph${paragraphs === 1 ? '' : 's'} (aim for 3 or more, separated by a blank line)` },

@@ -11,10 +11,12 @@ export function AiFeedback({ ai }) {
   return (
     <div className="aibox">
       <div className="eyebrow">AI rater (grammar, vocabulary, appropriacy)</div>
-      {ai.traits && <div className="tags">{Object.entries(ai.traits).map(([k, v]) => <Chip key={k} tone={ai.max?.[k] && v >= ai.max[k] ? 'good' : 'warn'}>{k}: {v}{ai.max?.[k] ? '/' + ai.max[k] : ''}</Chip>)}</div>}
+      {ai.traits && <div className="tags">{ai.total != null && <Chip tone={ai.total >= ai.outOf ? 'good' : 'warn'}>Total {ai.total}/{ai.outOf}</Chip>}{Object.entries(ai.traits).map(([k, v]) => <Chip key={k} tone={ai.max?.[k] && v >= ai.max[k] ? 'good' : 'warn'}>{k}: {v}{ai.max?.[k] ? '/' + ai.max[k] : ''}</Chip>)}</div>}
+      {ai.measured && <p className="small muted">Measured by the app: {ai.measured.words} words{ai.measured.spellingErrors != null ? ` · ${ai.measured.spellingErrors} spelling error${ai.measured.spellingErrors === 1 ? '' : 's'} found` : ''}. Form{ai.measured.spellingErrors != null ? ' and spelling are' : ' is'} scored with Pearson's published bands.</p>}
+      {ai.reasons && Object.keys(ai.reasons).length > 0 && <ul className="small reasons">{Object.entries(ai.reasons).map(([k, v]) => <li key={k}><b>{k}</b> ({ai.traits?.[k]}/{ai.max?.[k]}): {v}</li>)}</ul>}
       {ai.tip && <p className="small"><b>Most useful change:</b> {ai.tip}</p>}
       {ai.errors?.length > 0 && <ul className="small">{ai.errors.map((e, i) => <li key={i}><s>{e.original}</s> → <b>{e.fix}</b>{e.why ? ` (${e.why})` : ''}</li>)}</ul>}
-      {ai.improved && <details><summary className="small">Improved version</summary><p className="mono small">{ai.improved}</p></details>}
+      {ai.improved && <details><summary className="small">Improved version (booklet template)</summary><p className="mono small improved">{ai.improved}</p></details>}
     </div>
   );
 }
@@ -37,6 +39,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
   const [ai, setAi] = useState(null);
   const [grading, setGrading] = useState(false);
   const [saved, setSaved] = useState(null); // the logged attempt, so AI feedback can be attached to it
+  const [rewriting, setRewriting] = useState(false); // editing after feedback: untimed, logged as a rewrite
   const [started, setStarted] = useState(task !== 'sst');
   const [t0, setT0] = useState(Date.now());
 
@@ -47,6 +50,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
     setAi(prev?.meta?.ai || null);
     setSaved(prev || null);
     setGrading(false);
+    setRewriting(false);
     setStarted(task !== 'sst' || !!prev);
     setT0(Date.now());
     return () => stopVoice();
@@ -62,10 +66,10 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
   async function submit(timedOut = false) {
     if (res || (!text.trim() && !timedOut)) return;
     const j = task === 'swt' ? judgeSwt(text, src) : task === 'sst' ? judgeSst(text, src) : judgeEmail(text, src);
-    const judged = { checks: j.checks, cov: j.cov, n: j.n, timedOut };
+    const judged = { checks: j.checks, cov: j.cov, n: j.n, timedOut, rewrite: rewriting };
     setRes(judged);
     const row = await onAttempt({ day, task, item_id: item.id, focus, response: text, score: j.score, total: j.total,
-      meta: { judged, timedOut, seconds: Math.round((Date.now() - t0) / 1000) } });
+      meta: { judged, timedOut, rewrite: rewriting, seconds: Math.round((Date.now() - t0) / 1000) } });
     setSaved(row || null);
     if (text.trim() && !graderKnownOff()) await grade(row, text);
   }
@@ -81,7 +85,13 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
 
   const n = wordCount(text);
   const hard = strict(settings, focus);
-  const clock = <Timer start={t0} countdown={PACE[task].secs} stopped={!!res} onExpire={hard ? () => submit(true) : undefined} />;
+  const clock = rewriting
+    ? <span className="small muted">Rewrite: no time limit. Your first answer stays as the scored one.</span>
+    : <Timer start={t0} countdown={PACE[task].secs} stopped={!!res} onExpire={hard ? () => submit(true) : undefined} />;
+
+  function rewrite() {
+    setRes(null); setAi(null); setSaved(null); setRewriting(true); setT0(Date.now());
+  }
   const limits = task === 'swt' ? [25, 50] : task === 'sst' ? [20, 30] : [80, 120];
   const doneCount = items.filter((it) => doneMap[it.id]).length;
   const labels = task === 'email' ? src.bullets.map((b) => b.label) : src.points.map((p) => p.slice(0, 3).join(' / '));
@@ -112,14 +122,16 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
       </div>
       {res && (
         <div className="summary">
+          {res.rewrite && <Chip>Rewrite</Chip>}
           {res.timedOut && <div className="notice">Time's up: your answer was submitted automatically, as in the test.</div>}
           <Checks checks={[...res.checks, ...labels.map((l, i) => ({ ok: res.cov?.[i], label: (task === 'email' ? 'Covers: ' : 'Key point: ') + l }))]} />
           {src.model && <p className="small"><b>Model answer:</b> <span className="mono">{src.model}</span></p>}
           {task === 'sst' && <details><summary className="small">Show the lecture text</summary><p className="small">{src.text}</p></details>}
           {grading && <p className="small muted">AI rater is reading your answer…</p>}
           {ai && <AiFeedback ai={ai} />}
-          {!grading && (!ai || ai.error) && text.trim() && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai?.error ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
+          {!grading && text.trim() && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
           {!ai && !grading && graderKnownOff() && <p className="small muted">Grammar and vocabulary marking needs the optional AI rater (see README).</p>}
+          {!grading && <div className="btnrow"><button onClick={rewrite}>✎ Edit and resubmit</button><span className="small muted">Fix the errors above, then submit again for a fresh check.</span></div>}
         </div>
       )}
       <Nav idx={idx} setIdx={setIdx} n={items.length} onFinish={onFinish} focus={focus} />

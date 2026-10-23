@@ -123,7 +123,7 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
           {out.take?.audioUrl && <audio controls src={out.take.audioUrl} />}
           {grading && <p className="small muted">AI rater is listening to your answer…</p>}
           {ai && <AiFeedback ai={ai} />}
-          {!grading && (!ai || ai.error) && out.heard && !out.take?.micClosed && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai?.error ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
+          {!grading && out.heard && !out.take?.micClosed && !graderKnownOff() && <div className="btnrow"><button onClick={() => grade()}>{ai ? '↻ Grade again with AI' : 'Grade with AI'}</button></div>}
         </div>
       )}
       <Nav idx={idx} setIdx={setIdx} n={items.length} onFinish={onFinish} focus={focus} />

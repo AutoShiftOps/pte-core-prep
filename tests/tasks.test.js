@@ -125,3 +125,17 @@ test('auto-submitted empty answers score zero without crashing, and timeouts rea
   assert.equal(r.timeouts.total, 3);
   assert.ok(r.focus.actions.some((a) => a.includes('clock ran out')));
 });
+
+test('AI grader: form and spelling come from Pearson bands, not the model', async () => {
+  const { finalize, measure } = await import('../api/grade.js');
+  const email = 'Dear John,\n\nThe purpose my email today is request to attending professional training course. I am planning to attend Forward Deployment Engineer course which strengthens the value of team infront of customer by exposing out strength in AI and ML operations that the course would teach.\n\nI would take like to split the work and training, and request our team to distribute my assigned tasks half. I truly appreciate your support on the request and I look forward to hearing from you.\n\nRegards,\nSudhakar Sajja';
+  assert.equal(measure('email', email).form, 2);
+  const out = finalize('email', { traits: { content: 1, form: 0, grammar: 0, vocabulary: 5, 'email conventions': 1, organization: 1 }, spellingErrors: [{ wrong: 'infront', right: 'in front' }] }, email);
+  assert.equal(out.traits.form, 2, 'model said 0, measured 50-120 words = 2');
+  assert.equal(out.traits.vocabulary, 2, 'clamped to max');
+  assert.equal(out.traits.spelling, 2, '1 error = 2 for email');
+  assert.equal(out.outOf, 15);
+  assert.equal(measure('swt', 'a b c d e').form, 0, 'no punctuation');
+  assert.equal(measure('sst', 'The speaker discussed climate change, explaining that sea levels rise and that cities must adapt quickly, which shows urgent planning is needed now.').form, 2);
+  assert.equal(finalize('sst', { spellingErrors: [1, 2] }, 'x.').traits.spelling, 1);
+});
