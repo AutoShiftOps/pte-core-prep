@@ -171,6 +171,14 @@ function Trainer({ user }) {
   }, []);
 
   const dayAttempts = useMemo(() => (attempts || []).filter((a) => a.day === day), [attempts, day]);
+  // Focus drills run from an earlier day's report are practice done TODAY: log them under today.
+  const todayAttempts = useMemo(() => (attempts || []).filter((a) => a.day === today), [attempts, today]);
+  // The most recent earlier day with practice: step 1 of the daily routine is its coach report.
+  const prevDay = useMemo(() => {
+    const days = [...new Set((attempts || []).filter((a) => a.day < today && !a.focus).map((a) => a.day))].sort();
+    return days[days.length - 1] || null;
+  }, [attempts, today]);
+  const prevReport = useMemo(() => (prevDay ? buildDayReport(prevDay, attempts, BANKS) : null), [prevDay, attempts]);
   const doneCounts = useMemo(() => {
     const c = {};
     for (const k of Object.keys(TASKS)) c[k] = new Set(dayAttempts.filter((a) => a.task === k && !a.focus).map((a) => a.item_id)).size;
@@ -190,8 +198,11 @@ function Trainer({ user }) {
 
   function renderDrill(task, items, focus, onFinish, key) {
     const C = DRILLS[task];
-    return <C key={key} task={task} {...common} bank={bankFor(task)} items={items} focus={focus} onFinish={onFinish} />;
+    const props = focus ? { ...common, day: today, dayAttempts: todayAttempts } : common;
+    return <C key={key} task={task} {...props} bank={bankFor(task)} items={items} focus={focus} onFinish={onFinish} />;
   }
+
+  function openLastReport() { stopVoice(); setFocusRun(null); setDay(prevDay); setTab('report'); }
 
   return (
     <div className="wrap">
@@ -221,7 +232,8 @@ function Trainer({ user }) {
 
       {tab === 'today' && (sets === 'future'
         ? <section className="card"><h2>Opens on {fmtLong(day)}</h2>{plan.note && <p>{plan.note}</p>}<p className="muted">Each day's set is built from your earlier results, so it opens on the day.</p></section>
-        : <Today plan={plan} sets={sets} doneCounts={doneCounts} open={openTask} />)}
+        : <Today plan={plan} sets={sets} doneCounts={doneCounts} open={openTask}
+            last={day === today && prevDay ? { day: prevDay, label: fmtLong(prevDay), headline: prevReport?.focus?.headline, open: openLastReport } : null} />)}
 
       {tab === 'practice' && (
         sets === null ? <p className="muted">Preparing the day's set…</p>

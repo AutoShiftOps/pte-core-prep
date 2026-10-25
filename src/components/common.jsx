@@ -60,4 +60,22 @@ export function useDoneMap(dayAttempts, task, focus) {
   }, [dayAttempts, task, focus]);
 }
 
+/**
+ * In the exam each speaking item gets one take. When an item already has a regular attempt today, say so:
+ * the first try is the one the coach report counts, and retakes are practice only.
+ */
+export function FirstTryNote({ dayAttempts, task, itemId, focus }) {
+  if (focus) return null;
+  const tries = dayAttempts.filter((a) => a.task === task && a.item_id === itemId && !a.focus);
+  if (!tries.length) return null;
+  const first = tries[0];
+  const pct = first.total ? Math.round((first.score / first.total) * 100) : null;
+  return (
+    <div className={'firsttry' + (tries.length > 1 ? ' warn' : '')}>
+      <b>{tries.length > 1 ? `Retake ${tries.length - 1}` : 'Done'}:</b> your first try{pct != null ? ` (${pct}% of words)` : ''} is the one that counts.
+      {' '}{tries.length > 1 ? 'In the exam you get one take, so move on to the next item.' : 'A retake is practice only. In the exam you get one take.'}
+    </div>
+  );
+}
+
 export const KIND_LABEL = { review: 'Review: you missed this before', recycled: 'Seen before', new: 'New' };

@@ -2,12 +2,20 @@ import { TASKS, SECTIONS } from '../lib/tasks.js';
 import { Chip } from './common.jsx';
 
 /** Today's booklet plan with live progress; every row opens its drill. */
-export default function Today({ plan, sets, doneCounts, open }) {
+export default function Today({ plan, sets, doneCounts, open, last }) {
   const planned = Object.entries(plan.counts);
   const totalPlanned = planned.reduce((a, [, n]) => a + n, 0);
   const totalDone = planned.reduce((a, [k, n]) => a + Math.min(n, doneCounts[k] || 0), 0);
   return (
     <div className="stack">
+      {last && (
+        <section className="card start">
+          <div className="cardhead"><h2>Start here: your last coach report</h2><span className="muted small">{last.label}</span></div>
+          {last.headline && <p><b>{last.headline}</b></p>}
+          <p className="small muted">About 15 minutes: spelling sprint, a focus drill on your top mistake, then the word workout. Drills you run there count as today's extra practice.</p>
+          <div className="btnrow"><button className="primary" onClick={last.open}>Open the report</button></div>
+        </section>
+      )}
       <section className="card">
         <div className="cardhead"><h2>Today's plan</h2><span className="muted small">{totalDone}/{totalPlanned} items · booklet Day {plan.n}</span></div>
         {plan.note && <div className="focusbox"><div className="eyebrow">From your booklet</div><p>{plan.note}</p></div>}

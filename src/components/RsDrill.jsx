@@ -3,7 +3,7 @@ import { compare } from '../lib/score.js';
 import { speak, stopVoice, voiceFor, voiceLabel } from '../lib/voice.js';
 import { startTake } from '../lib/assess.js';
 import { beep } from '../lib/mic.js';
-import { Diff, Chip, RecBar, SpeechScores, useDoneMap, KIND_LABEL } from './common.jsx';
+import { Diff, Chip, RecBar, SpeechScores, useDoneMap, KIND_LABEL, FirstTryNote } from './common.jsx';
 
 const MAX_MS = 15000;
 
@@ -107,6 +107,7 @@ export default function RsDrill({ items, bank, day, dayAttempts, onAttempt, sett
         {phase === 'recording' && <button onClick={() => takeRef.current?.stop()}>I've finished</button>}
         {item.kind && item.kind !== 'new' && <Chip tone={item.kind === 'review' ? 'warn' : ''}>{KIND_LABEL[item.kind]}</Chip>}
       </div>
+      <FirstTryNote dayAttempts={dayAttempts} task="rs" itemId={item.id} focus={focus} />
       <RecBar phase={phase} elapsed={elapsed} maxMs={MAX_MS} label={label} />
       {error && <div className="notice">{error}</div>}
       {phase === 'done' && result && (

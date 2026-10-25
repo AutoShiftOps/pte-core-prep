@@ -19,11 +19,11 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 23 | AI rater | Content 0/2 for a summary that covered every main point | Fixed: reference summary + main-aspects rule + floor when all key points found |
 | Oct 23 | Writing | Checklist said 50 words, rater said 49 (hyphens counted differently) | Fixed: one count everywhere, hyphenated = 2 (safe side) |
 | Oct 23 | Deploy | Open tab after a deploy failed to load the speech engine | Fixed: auto-reload once on stale build |
-| Oct 23 | Coach report | Morning routine needs yesterday's report, but the app opens on today (empty) | Open: show "Yesterday's report" on the Today tab |
+| Oct 23 | Coach report | Morning routine needs yesterday's report, but the app opens on today (empty) | Fixed (Oct 25): "Start here: your last coach report" card on the Today tab |
 | Oct 23 | Coach report | Spelling sprint and word workout results are not saved | Open: log them as practice so progress shows |
-| Oct 23 | Content | Stored model answers use a different style from the booklet templates | Open: append template-style model answers (content is append-only) |
-| Oct 23 | Speaking | Free retakes of Repeat Sentence / Read Aloud hide that only the first try counts | Open: label "first try counted" and nudge to move on |
-| Oct 23 | Focus drill | Drill attempts are filed under the day on screen, not today | Open: file under today, link to the source day |
+| Oct 23 | Content | Stored model answers use a different style from the booklet templates | Fixed (Oct 25): 30 template-style model answers (src/content/templateModels.js), tested for length, key points and template |
+| Oct 23 | Speaking | Free retakes of Repeat Sentence / Read Aloud hide that only the first try counts | Fixed (Oct 25): first-try note on Repeat Sentence and Read Aloud; retakes flagged as practice only |
+| Oct 23 | Focus drill | Drill attempts are filed under the day on screen, not today | Fixed (Oct 25): focus drills log under today |
 | Oct 23 | Reorder Paragraph | Tip was too thin: user lost marks on opener, pronoun and the two meanings of "once" | Fixed: 6-test checklist + "name the link" drill in the drill tip, Coach report tip and booklet |
 | Oct 24 | Trends | Weekly scorecard showed the same task as biggest win AND biggest leak (Read Aloud 100%) early in a week | Fixed: leak = weakest task still below target, never the win; "None: every task at target" otherwise |
 | Oct 25 | Answer Short Question | Azure got the expected answer as a script and biased recognition towards it: "hear" came back as "hearing", "architic" as "Antarctica", so wrong answers were marked correct | Fixed: free (unscripted) recognition; near-miss note for the wrong word form. Watch: Repeat Sentence / Read Aloud stay scripted (needed for pronunciation scores); Day 7 logs show omissions are still caught |

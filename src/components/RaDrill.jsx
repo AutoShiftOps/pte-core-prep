@@ -3,7 +3,7 @@ import { compare } from '../lib/score.js';
 import { speak, stopVoice, voiceFor } from '../lib/voice.js';
 import { startTake } from '../lib/assess.js';
 import { beep } from '../lib/mic.js';
-import { Diff, Chip, RecBar, SpeechScores, useDoneMap, KIND_LABEL } from './common.jsx';
+import { Diff, Chip, RecBar, SpeechScores, useDoneMap, KIND_LABEL, FirstTryNote } from './common.jsx';
 
 const PREP_MS = 35000;
 const MAX_MS = 40000;
@@ -121,6 +121,7 @@ export default function RaDrill({ items, bank, day, dayAttempts, onAttempt, sett
         <label className="small"><input type="checkbox" checked={cuts} onChange={(e) => setCuts(e.target.checked)} /> Show pause marks</label>
         {item.kind && item.kind !== 'new' && <Chip tone={item.kind === 'review' ? 'warn' : ''}>{KIND_LABEL[item.kind]}</Chip>}
       </div>
+      <FirstTryNote dayAttempts={dayAttempts} task="ra" itemId={item.id} focus={focus} />
       <RecBar phase={phase} elapsed={elapsed} maxMs={phase === 'prep' ? PREP_MS : MAX_MS} label={label} />
       {error && <div className="notice">{error}</div>}
       {phase === 'done' && result && (

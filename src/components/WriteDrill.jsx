@@ -5,6 +5,7 @@ import { gradeAnswer, graderKnownOff } from '../lib/grader.js';
 import { Chip, useDoneMap, KIND_LABEL } from './common.jsx';
 import { Nav, Timer, Checks } from './bits.jsx';
 import { PACE, strict } from '../lib/timing.js';
+import { TEMPLATE_MODELS } from '../content/templateModels.js';
 
 export function AiFeedback({ ai }) {
   if (ai.error) return <div className="notice">AI grading: {ai.error}</div>;
@@ -34,6 +35,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
   const item = items[idx];
   const src = bank[item.id];
   const conf = CONF[task];
+  const model = TEMPLATE_MODELS[item.id] || src.model; // one style to learn: the booklet template
   const [text, setText] = useState('');
   const [res, setRes] = useState(null);
   const [ai, setAi] = useState(null);
@@ -80,7 +82,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
     const prompt = task === 'email' ? `${src.text}\nRegister: ${src.register}\nBullets: ${src.bullets.map((b) => b.label).join('; ')}` : src.text;
     const j = task === 'swt' ? judgeSwt(answer, src) : task === 'sst' ? judgeSst(answer, src) : judgeEmail(answer, src);
     const g = await gradeAnswer(task, prompt, answer, {
-      reference: src.model || '',
+      reference: model || '',
       coverage: { hit: (j.cov || []).filter(Boolean).length, total: (j.cov || []).length },
     });
     setGrading(false);
@@ -129,7 +131,7 @@ export default function WriteDrill({ task, items, bank, day, dayAttempts, onAtte
           {res.rewrite && <Chip>Rewrite</Chip>}
           {res.timedOut && <div className="notice">Time's up: your answer was submitted automatically, as in the test.</div>}
           <Checks checks={[...res.checks, ...labels.map((l, i) => ({ ok: res.cov?.[i], label: (task === 'email' ? 'Covers: ' : 'Key point: ') + l }))]} />
-          {src.model && <p className="small"><b>Model answer:</b> <span className="mono">{src.model}</span></p>}
+          {model && <p className="small"><b>Model answer{TEMPLATE_MODELS[item.id] ? ' (booklet template)' : ''}:</b> <span className="mono">{model}</span></p>}
           {task === 'sst' && <details><summary className="small">Show the lecture text</summary><p className="small">{src.text}</p></details>}
           {grading && <p className="small muted">AI rater is reading your answer…</p>}
           {ai && <AiFeedback ai={ai} />}

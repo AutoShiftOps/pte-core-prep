@@ -208,3 +208,19 @@ test('Answer Short Question: "hear" is not "hearing", and the near miss is expla
   const ant = { text: 'Which continent is covered by the largest ice sheet?', answers: ['Antarctica'] };
   assert.equal(judgeAsq('Arctic', ant, { micClosed: false }).ok, false);
 });
+
+test('template model answers: every summary has one, in the booklet template, with every key point', async () => {
+  const { TEMPLATE_MODELS } = await import('../src/content/templateModels.js');
+  const { templateProblems } = await import('../api/grade.js');
+  for (const t of ['swt', 'sst']) {
+    for (const it of ITEMS[t]) {
+      const m = TEMPLATE_MODELS[it.id];
+      assert.ok(m, `${it.id} has a template model`);
+      const j = t === 'swt' ? judgeSwt(m, BY_ID[t][it.id]) : judgeSst(m, BY_ID[t][it.id]);
+      const [lo, hi] = t === 'swt' ? [30, 45] : [20, 30];
+      assert.ok(j.n >= lo && j.n <= hi, `${it.id}: ${j.n} words`);
+      assert.ok(j.cov.every(Boolean), `${it.id} covers every key point`);
+      assert.deepEqual(templateProblems(t, m, ''), [], `${it.id} follows the template`);
+    }
+  }
+});

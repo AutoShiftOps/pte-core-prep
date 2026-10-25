@@ -117,6 +117,10 @@ audio { height: 36px; max-width: 100%; }
 .improved { white-space: pre-wrap; line-height: 1.6; }
 .reasons { margin: 6px 0; padding-left: 18px; }
 .how .tips { margin-top: 6px; }
+.card.start { border-left: 4px solid var(--accent, #1f5f8b); }
+.firsttry { font-size: .88rem; border-radius: 8px; padding: 7px 10px; margin: 6px 0; background: var(--sunk); color: var(--muted); }
+.firsttry b { color: var(--ink); }
+.firsttry.warn { border-left: 3px solid var(--warn); color: var(--ink); }
 .how .tips summary { cursor: pointer; font-weight: 600; }
 .how .tips ol { margin: 6px 0 2px; padding-left: 20px; }
 .how .tips li { margin: 3px 0; }
