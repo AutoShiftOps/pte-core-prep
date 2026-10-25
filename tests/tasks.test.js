@@ -197,3 +197,14 @@ test('weekly scorecard: the leak is never the win, and only below target', async
   assert.equal(leakText(['ra', 'rfib', 'lfib'], { ra: { pct: 100 }, rfib: { pct: 97 }, lfib: { pct: 60 } }), 'Listening Fill in the Blanks 60%');
   assert.match(leakText(['ra', 'wfd'], { ra: { pct: 100 }, wfd: { pct: 72 } }, ['Whole words missed', 28]), /Write From Dictation 72% · whole words missed \(28\)/);
 });
+
+test('Answer Short Question: "hear" is not "hearing", and the near miss is explained', () => {
+  const item = { text: 'Which sense do you use when you listen to music?', answers: ['hearing'] };
+  const r = judgeAsq('Hear.', item, { micClosed: false });
+  assert.equal(r.ok, false);
+  assert.deepEqual(r.near, { said: 'hear', answer: 'hearing' });
+  assert.equal(judgeAsq('Hearing.', item, { micClosed: false }).ok, true);
+  assert.equal(judgeAsq('Sight.', item, { micClosed: false }).near, null);
+  const ant = { text: 'Which continent is covered by the largest ice sheet?', answers: ['Antarctica'] };
+  assert.equal(judgeAsq('Arctic', ant, { micClosed: false }).ok, false);
+});

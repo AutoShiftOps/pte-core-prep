@@ -158,15 +158,17 @@ export function AsqDrill({ items, bank, day, dayAttempts, onAttempt, settings, e
     if (runId !== runRef.current) return;
     if (settings.beep) beep();
     let take;
-    try { take = await startTake({ engine, reference: src.answers[0], lang: settings.lang, maxMs: 10000, onState: (s) => setElapsed(s.elapsed) }); }
+    // Unscripted on purpose: giving Azure the expected answer as a script biases recognition towards it
+    // ("hear" came back as "hearing"). Free recognition records what was actually said.
+    try { take = await startTake({ engine, reference: '', lang: settings.lang, maxMs: 10000, onState: (s) => setElapsed(s.elapsed) }); }
     catch (e) { setPhase('idle'); setError(micError(e)); return; }
     takeRef.current = take; setPhase('recording');
     const t = await take.done; takeRef.current = null;
     if (runId !== runRef.current) return;
     const j = judgeAsq(t.heard || '', src, t);
-    setOut({ heard: t.heard, ok: j.ok, latencyMs: t.latencyMs, micClosed: t.micClosed });
+    setOut({ heard: t.heard, ok: j.ok, near: j.near, latencyMs: t.latencyMs, micClosed: t.micClosed });
     setPhase('done');
-    await onAttempt({ day, task: 'asq', item_id: item.id, focus, response: t.heard || '', score: j.score, total: 1, meta: { latencyMs: t.latencyMs, micClosed: t.micClosed, engine: t.engine } });
+    await onAttempt({ day, task: 'asq', item_id: item.id, focus, response: t.heard || '', score: j.score, total: 1, meta: { latencyMs: t.latencyMs, micClosed: t.micClosed, engine: t.engine, unscripted: true, near: j.near || null } });
   }
   const doneCount = items.filter((it) => doneMap[it.id]).length;
   return (
@@ -184,6 +186,7 @@ export function AsqDrill({ items, bank, day, dayAttempts, onAttempt, settings, e
             {out.micClosed ? <Chip tone="bad">No answer within 3 s</Chip> : out.latencyMs != null && <Chip tone={out.latencyMs <= 1500 ? 'good' : 'warn'}>Answered after {(out.latencyMs / 1000).toFixed(1)} s</Chip>}
           </div>
           <p className="small">Question: {src.text}<br />Accepted: <b>{src.answers.join(' / ')}</b> · Heard: “{out.heard || '(nothing)'}”</p>
+          {out.near && <p className="small"><Chip tone="warn">Close</Chip> You said <b>{out.near.said}</b>; the answer is <b>{out.near.answer}</b>. Same word family, wrong form: check whether the question asks for a noun, verb or adjective.</p>}
         </div>
       )}
       <Nav idx={idx} setIdx={setIdx} n={items.length} onFinish={onFinish} focus={focus} label="question" />

@@ -26,6 +26,7 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 23 | Focus drill | Drill attempts are filed under the day on screen, not today | Open: file under today, link to the source day |
 | Oct 23 | Reorder Paragraph | Tip was too thin: user lost marks on opener, pronoun and the two meanings of "once" | Fixed: 6-test checklist + "name the link" drill in the drill tip, Coach report tip and booklet |
 | Oct 24 | Trends | Weekly scorecard showed the same task as biggest win AND biggest leak (Read Aloud 100%) early in a week | Fixed: leak = weakest task still below target, never the win; "None: every task at target" otherwise |
+| Oct 25 | Answer Short Question | Azure got the expected answer as a script and biased recognition towards it: "hear" came back as "hearing", "architic" as "Antarctica", so wrong answers were marked correct | Fixed: free (unscripted) recognition; near-miss note for the wrong word form. Watch: Repeat Sentence / Read Aloud stay scripted (needed for pronunciation scores); Day 7 logs show omissions are still caught |
 
 ## Feature ideas
 

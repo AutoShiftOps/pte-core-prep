@@ -139,9 +139,21 @@ export function judgeRts(heard, item, take) {
 }
 
 export function judgeAsq(heard, item, take) {
-  const h = ' ' + words(heard).map(canon).join(' ') + ' ';
+  const hw = words(heard).map(canon).filter(Boolean);
+  const h = ' ' + hw.join(' ') + ' ';
   const ok = !take.micClosed && item.answers.some((a) => h.includes(' ' + words(a).map(canon).join(' ') + ' '));
-  return { kind: 'asq', ok, score: ok ? 1 : 0, total: 1 };
+  // Near miss: a word from the same family as a one-word answer (hear / hearing, decide / decision).
+  let near = null;
+  if (!ok && !take.micClosed) {
+    for (const a of item.answers) {
+      const ac = canon(a);
+      if (!ac || /\s/.test(a.trim())) continue;
+      const stem = ac.slice(0, Math.max(4, Math.min(ac.length - 2, 5)));
+      const w = hw.find((x) => x !== ac && x.length >= 3 && (ac.startsWith(x) || x.startsWith(stem)));
+      if (w) { near = { said: w, answer: a }; break; }
+    }
+  }
+  return { kind: 'asq', ok, near, score: ok ? 1 : 0, total: 1 };
 }
 
 export const cleanAnswer = (s) => cleanWord(s || '');
