@@ -189,3 +189,11 @@ test('stale build after a deploy: reload once, never loop', async () => {
   assert.equal(reloads, 1);
   delete globalThis.sessionStorage; delete globalThis.window;
 });
+
+test('weekly scorecard: the leak is never the win, and only below target', async () => {
+  const { leakText } = await import('../src/lib/coach.js');
+  assert.equal(leakText(['ra'], { ra: { pct: 100 } }), null, 'one task: no leak');
+  assert.equal(leakText(['ra', 'rfib'], { ra: { pct: 100 }, rfib: { pct: 97 } }), 'None: every task at target');
+  assert.equal(leakText(['ra', 'rfib', 'lfib'], { ra: { pct: 100 }, rfib: { pct: 97 }, lfib: { pct: 60 } }), 'Listening Fill in the Blanks 60%');
+  assert.match(leakText(['ra', 'wfd'], { ra: { pct: 100 }, wfd: { pct: 72 } }, ['Whole words missed', 28]), /Write From Dictation 72% · whole words missed \(28\)/);
+});

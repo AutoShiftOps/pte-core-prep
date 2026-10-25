@@ -304,6 +304,16 @@ export const weekStart = (week) => addDays(PLAN_START, (week - 1) * 7);
 
 const SKILL = { L: 'Listening', R: 'Reading', W: 'Writing', S: 'Speaking' };
 
+// A leak is the weakest task that is still BELOW its weekly target, and never the same task as the win.
+const weekTarget = (k) => (k === 'wfd' ? TARGETS.wfd : 90);
+export function leakText(ranked, perTask, topCat) {
+  if (ranked.length < 2) return null; // one task can't be both the win and the leak
+  const below = ranked.slice(1).filter((k) => perTask[k].pct < weekTarget(k));
+  if (!below.length) return 'None: every task at target';
+  const k = below[below.length - 1];
+  return `${TASKS[k].label} ${perTask[k].pct}%${k === 'wfd' && topCat ? ` · ${topCat[0].toLowerCase()} (${topCat[1]})` : ''}`;
+}
+
 export function buildWeekScorecard(attempts, banks, week) {
   const from = weekStart(week), to = addDays(from, 6);
   const days = dayRange(from, to);
@@ -333,7 +343,7 @@ export function buildWeekScorecard(attempts, banks, week) {
     week, from, to, activeDays, fullDays,
     wfdAccuracy: perTask.wfd.pct, rsFastPct: pct(fast, rsAll.length), skills, perTask,
     biggestWin: ranked.length ? `${TASKS[ranked[0]].label} ${perTask[ranked[0]].pct}%` : null,
-    biggestLeak: ranked.length ? `${TASKS[ranked[ranked.length - 1]].label} ${perTask[ranked[ranked.length - 1]].pct}%${topCat ? ` · dictation: ${topCat[0].toLowerCase()} (${topCat[1]})` : ''}` : null,
+    biggestLeak: leakText(ranked, perTask, topCat),
     updatedAt: new Date().toISOString(),
   };
 }

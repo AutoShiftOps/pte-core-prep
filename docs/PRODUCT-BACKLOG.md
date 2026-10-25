@@ -25,6 +25,7 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 23 | Speaking | Free retakes of Repeat Sentence / Read Aloud hide that only the first try counts | Open: label "first try counted" and nudge to move on |
 | Oct 23 | Focus drill | Drill attempts are filed under the day on screen, not today | Open: file under today, link to the source day |
 | Oct 23 | Reorder Paragraph | Tip was too thin: user lost marks on opener, pronoun and the two meanings of "once" | Fixed: 6-test checklist + "name the link" drill in the drill tip, Coach report tip and booklet |
+| Oct 24 | Trends | Weekly scorecard showed the same task as biggest win AND biggest leak (Read Aloud 100%) early in a week | Fixed: leak = weakest task still below target, never the win; "None: every task at target" otherwise |
 
 ## Feature ideas
 
