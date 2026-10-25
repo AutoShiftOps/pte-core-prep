@@ -51,7 +51,11 @@ function cloudStore() {
     const box = lsGet(OUT, []);
     if (!box.length) return;
     const { error } = await sb.from('attempts').insert(box.map(toRow));
-    if (!error) lsSet(OUT, []);
+    if (!error) { lsSet(OUT, []); return; }
+    // One bad row (e.g. a task the database doesn't accept yet) must not block the others.
+    const keep = [];
+    for (const b of box) { const r = await sb.from('attempts').insert(toRow(b)); if (r.error) keep.push(b); }
+    lsSet(OUT, keep);
   }
   return {
     mode: 'cloud',

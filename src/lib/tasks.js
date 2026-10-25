@@ -10,6 +10,7 @@ import SWT from '../content/swt.js';
 import SST from '../content/sst.js';
 import EMAIL from '../content/email.js';
 import DI from '../content/di.js';
+import GRAM from '../content/grammar.js';
 import { LFIB, HIW, REORDER, plainText } from './derived.js';
 
 // skills: which PTE scores each task feeds (from Pearson's PTE Core task guide)
@@ -28,17 +29,19 @@ export const TASKS = {
   lfib:  { label: 'Listening Fill in the Blanks', section: 'Listening', skills: ['L', 'W'], per: 10, kind: 'obj', threshold: 1 },
   hiw:   { label: 'Highlight Incorrect Words', section: 'Listening', skills: ['L', 'R'], per: 10, kind: 'obj', threshold: 1 },
   wfd:   { label: 'Write From Dictation', section: 'Listening', skills: ['L', 'W'], per: 20, kind: 'dict', threshold: 1 },
+  // Not a PTE task: feeds no PTE skill index, but is logged and reported like the others.
+  gram:  { label: 'Grammar gym', section: 'Grammar', skills: [], per: 15, kind: 'gram', threshold: 1 },
 };
 export const TASK_KEYS = Object.keys(TASKS);
-export const SECTIONS = ['Speaking', 'Writing', 'Reading', 'Listening'];
+export const SECTIONS = ['Speaking', 'Writing', 'Reading', 'Listening', 'Grammar'];
 
 export const ITEMS = {
   wfd: WFD, rs: RS, ra: RA, rwfib: RWFIB, rfib: RFIB, asq: ASQ, rts: RTS, swt: SWT, sst: SST, email: EMAIL, di: DI,
-  lfib: LFIB, hiw: HIW, ro: REORDER,
+  lfib: LFIB, hiw: HIW, ro: REORDER, gram: GRAM,
 };
 
 // id → item, and id → reference text used by the coach report
 export const BY_ID = Object.fromEntries(TASK_KEYS.map((k) => [k, Object.fromEntries(ITEMS[k].map((i) => [i.id, i]))]));
-export const BANKS = Object.fromEntries(TASK_KEYS.map((k) => [k, Object.fromEntries(ITEMS[k].map((i) => [i.id, k === 'rwfib' || k === 'rfib' ? plainText(i.text) : k === 'hiw' ? i.audio : i.text]))]));
+export const BANKS = Object.fromEntries(TASK_KEYS.map((k) => [k, Object.fromEntries(ITEMS[k].map((i) => [i.id, k === 'rwfib' || k === 'rfib' ? plainText(i.text) : k === 'hiw' ? i.audio : k === 'gram' ? i.q : i.text]))]));
 
 export const REVIEW_SHARE = 0.4; // up to 40 % of a set can be yesterday's weak items

@@ -224,3 +224,59 @@ test('template model answers: every summary has one, in the booklet template, wi
     }
   }
 });
+
+test('Grammar gym: bank questions are valid and every rule has questions', async () => {
+  const { RULES, optionsFor } = await import('../src/lib/grammar.js');
+  const bank = ITEMS.gram;
+  assert.ok(bank.length >= 90);
+  for (const q of bank) {
+    assert.ok(q.q.includes('___'), q.id);
+    assert.ok(RULES[q.rule], q.id + ' rule');
+    assert.ok(!q.d.includes(q.a), q.id + ' answer not among wrong options');
+    assert.equal(new Set(optionsFor(q)).size, q.d.length + 1, q.id + ' options unique');
+  }
+  for (const r of ['clause', 'to', 'agree', 'article', 'count', 'prep', 'tense', 'passive', 'form', 'plural']) assert.ok(bank.filter((q) => q.rule === r).length >= 6, r);
+});
+
+test('Grammar gym: your own mistakes become questions, first, until you get them right', async () => {
+  const { ownItems, buildGramSet } = await import('../src/lib/grammar.js');
+  const d7 = '2026-10-23', d9 = '2026-10-25';
+  const attempts = [
+    { id: 'a1', day: d7, task: 'wfd', item_id: 'w175', score: 6, total: 8, meta: { errors: [{ cat: 'ending_s', kind: 'form', word: 'help', typed: 'helps' }, { cat: 'content', kind: 'miss', word: 'workplace.', typed: null }] } },
+    { id: 'a2', day: d7, task: 'rwfib', item_id: 'f019', score: 3, total: 4, meta: { missChunks: [{ answer: 'surfaces', chosen: 'sources', phrase: 'road surfaces' }] } },
+    { id: 'a3', day: d7, task: 'email', item_id: 'e001', score: 5, total: 8, meta: { ai: { errors: [{ original: 'request to attending', fix: 'request permission to attend', why: 'to + base verb' }] } } },
+  ];
+  const own = ownItems(attempts, BANKS, d9);
+  const ids = Object.keys(own);
+  assert.equal(ids.length, 3, 'content misses are not grammar questions');
+  const s = own['x-a1-0'];
+  assert.equal(s.rule, 'agree'); assert.equal(s.a, 'help'); assert.ok(s.d.includes('helps')); assert.ok(s.q.includes('___'));
+  assert.equal(own['x-a2-p0'].q, 'road ___');
+  assert.equal(own['x-a3-w0'].a, 'request permission to attend');
+
+  const set = buildGramSet({ attempts, banks: BANKS, day: d9, perDay: 15 });
+  assert.equal(set.length, 15);
+  assert.deepEqual(set.slice(0, 3).map((x) => x.kind), ['own', 'own', 'own']);
+  assert.equal(new Set(set.map((x) => x.id)).size, 15, 'no duplicates');
+
+  // Answer one of your own mistakes correctly: it leaves the next day's set; a wrong bank answer returns first.
+  const later = [...attempts,
+    { id: 'g1', day: d9, task: 'gram', item_id: 'x-a1-0', score: 1, total: 1, meta: { rule: 'agree' } },
+    { id: 'g2', day: d9, task: 'gram', item_id: 'm012', score: 0, total: 1, meta: { rule: 'to' } }];
+  const next = buildGramSet({ attempts: later, banks: BANKS, day: '2026-10-26', perDay: 15 });
+  assert.ok(!next.some((x) => x.id === 'x-a1-0'));
+  assert.equal(next.find((x) => x.id === 'm012')?.kind, 'review');
+});
+
+test('AI grader: spoken answers are not marked for number words, spelling or hyphens', async () => {
+  const { spokenErrors } = await import('../api/grade.js');
+  const raw = [
+    { original: 'two thousand eighteen', fix: '2018', why: 'Use numeric year format' },
+    { original: 'has Rosen', fix: 'has risen', why: 'Spelling error' },
+    { original: 'in store', fix: 'in-store', why: 'Missing hyphen' },
+    { original: 'has been declined', fix: 'has declined', why: 'Incorrect verb form' },
+    { original: 'online sales has picked up', fix: 'online sales have picked up', why: 'Subject-verb agreement' },
+    { original: 'Rosen', fix: 'risen', why: 'Possibly pronounced unclearly' },
+  ];
+  assert.deepEqual(spokenErrors(raw).map((e) => e.fix), ['has declined', 'online sales have picked up', 'risen']);
+});

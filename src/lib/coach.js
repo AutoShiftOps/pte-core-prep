@@ -250,6 +250,7 @@ const TIPS = {
   email: 'Greeting, purpose line, one paragraph per bullet, close, sign-off. 100–110 words.',
   di: 'Use the template: shows → highest → lowest → trend → overall. Say at least two numbers.',
   rts: 'Decide formal or informal in the first seconds, cover every part of the situation, and use the full 40 seconds.',
+  gram: 'Reread the rule line under each question you missed. Your own mistakes return tomorrow until you get them right.',
   asq: 'Answer with one word, immediately. If unsure, still say your best guess before 3 seconds.',
 };
 

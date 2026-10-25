@@ -27,12 +27,13 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 23 | Reorder Paragraph | Tip was too thin: user lost marks on opener, pronoun and the two meanings of "once" | Fixed: 6-test checklist + "name the link" drill in the drill tip, Coach report tip and booklet |
 | Oct 24 | Trends | Weekly scorecard showed the same task as biggest win AND biggest leak (Read Aloud 100%) early in a week | Fixed: leak = weakest task still below target, never the win; "None: every task at target" otherwise |
 | Oct 25 | Answer Short Question | Azure got the expected answer as a script and biased recognition towards it: "hear" came back as "hearing", "architic" as "Antarctica", so wrong answers were marked correct | Fixed: free (unscripted) recognition; near-miss note for the wrong word form. Watch: Repeat Sentence / Read Aloud stay scripted (needed for pronunciation scores); Day 7 logs show omissions are still caught |
+| Oct 25 | AI rater (speaking) | Describe Image feedback "corrected" the transcript: "two thousand eighteen → 2018 (numeric format)", "Rosen → risen (spelling)", hyphens | Fixed: speaking rater told it reads a speech transcript; formatting-only corrections filtered out; misheard words reported as pronunciation |
 
 ## Feature ideas
 
 | Date | Idea | Why |
 |---|---|---|
-| Oct 23 | Grammar gym generated from the user's own logged errors | The four habits (subject after "that", to + base verb, one -s rule, articles) caused most lost marks |
+| Oct 23 | Grammar gym generated from the user's own logged errors | **Shipped Oct 25:** 98-question bank on the 10 master-sheet rules + questions built from own dictation errors, missed word pairs and AI-rater corrections; wrong answers return; 15 a day in the plan |
 | Oct 23 | Printable master sheet with the user's own mistakes in it | Built manually today; could be generated per user |
 | Oct 23 | Progress certificate / case-study export | Evidence for marketing and for users' own motivation |
 

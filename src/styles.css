@@ -189,3 +189,16 @@ textarea { font: inherit; font-family: var(--mono); font-size: .98rem; color: va
 .chart .grid { stroke: var(--chart-grid); stroke-width: 1; }
 #taskSel { max-width: 100%; }
 @media (max-width: 600px) { .reorder { grid-template-columns: 1fr; } }
+
+/* Grammar gym */
+.gramq { font-size: 1.12rem; line-height: 1.7; margin: 10px 0; }
+.gramq .gap { display: inline-block; min-width: 5em; border-bottom: 2px solid var(--accent); text-align: center; font-weight: 600; padding: 0 4px; }
+.gramq .gap.ok { color: var(--good); border-color: var(--good); }
+.gramq .gap.bad { color: var(--bad); border-color: var(--bad); }
+.gramopts { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.gramopts button { min-width: 9em; text-align: left; }
+.gramopts button .k { display: inline-block; width: 1.4em; color: var(--muted); font-family: var(--mono); }
+.gramopts button.ok { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.gramopts button.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.gramopts button.dim { opacity: .5; }
+.gramwhy p { margin: 4px 0; }

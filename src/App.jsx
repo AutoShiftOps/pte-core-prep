@@ -21,6 +21,8 @@ import FibDrill from './components/FibDrill.jsx';
 import WriteDrill from './components/WriteDrill.jsx';
 import { LfibDrill, HiwDrill, ReorderDrill } from './components/ListenDrills.jsx';
 import { OpenSpeakDrill, AsqDrill } from './components/SpeakDrills.jsx';
+import GramDrill from './components/GramDrill.jsx';
+import { buildGramSet, ownItems } from './lib/grammar.js';
 
 
 setJwtProvider(() => store.accessToken());
@@ -28,7 +30,7 @@ setGraderJwt(() => store.accessToken());
 
 const DRILLS = {
   wfd: WfdDrill, rs: RsDrill, ra: RaDrill, rwfib: FibDrill, rfib: FibDrill, lfib: LfibDrill, hiw: HiwDrill, ro: ReorderDrill,
-  di: OpenSpeakDrill, rts: OpenSpeakDrill, asq: AsqDrill, swt: WriteDrill, email: WriteDrill, sst: WriteDrill,
+  di: OpenSpeakDrill, rts: OpenSpeakDrill, asq: AsqDrill, swt: WriteDrill, email: WriteDrill, sst: WriteDrill, gram: GramDrill,
 };
 const bankFor = (task) => (['wfd', 'rs', 'ra'].includes(task) ? BANKS[task] : BY_ID[task]);
 
@@ -107,7 +109,9 @@ function Trainer({ user }) {
     let changed = false;
     for (const t of tasks) {
       if (s[t]) continue;
-      s[t] = buildDaySet({ task: t, items: ITEMS[t], attempts: attemptsRef.current, day, perDay: plan.counts[t] || TASKS[t].per });
+      s[t] = t === 'gram'
+        ? buildGramSet({ attempts: attemptsRef.current, banks: BANKS, day, perDay: plan.counts[t] || TASKS[t].per })
+        : buildDaySet({ task: t, items: ITEMS[t], attempts: attemptsRef.current, day, perDay: plan.counts[t] || TASKS[t].per });
       changed = true;
     }
     if (changed) { try { await store.saveDailySet(day, s); } catch {} }
@@ -178,6 +182,8 @@ function Trainer({ user }) {
     const days = [...new Set((attempts || []).filter((a) => a.day < today && !a.focus).map((a) => a.day))].sort();
     return days[days.length - 1] || null;
   }, [attempts, today]);
+  // Grammar gym questions: the bank plus questions built from your own logged mistakes.
+  const gramBank = useMemo(() => ({ ...BY_ID.gram, ...ownItems(attempts || [], BANKS, today) }), [attempts, today]);
   const prevReport = useMemo(() => (prevDay ? buildDayReport(prevDay, attempts, BANKS) : null), [prevDay, attempts]);
   const doneCounts = useMemo(() => {
     const c = {};
@@ -199,7 +205,7 @@ function Trainer({ user }) {
   function renderDrill(task, items, focus, onFinish, key) {
     const C = DRILLS[task];
     const props = focus ? { ...common, day: today, dayAttempts: todayAttempts } : common;
-    return <C key={key} task={task} {...props} bank={bankFor(task)} items={items} focus={focus} onFinish={onFinish} />;
+    return <C key={key} task={task} {...props} bank={task === 'gram' ? gramBank : bankFor(task)} items={items} focus={focus} onFinish={onFinish} />;
   }
 
   function openLastReport() { stopVoice(); setFocusRun(null); setDay(prevDay); setTab('report'); }

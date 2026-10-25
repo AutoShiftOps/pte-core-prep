@@ -52,7 +52,7 @@ create policy "own summaries" on public.daily_summaries for all
 -- Re-running on an earlier version: allow every task type.
 alter table public.attempts drop constraint if exists attempts_task_check;
 alter table public.attempts add constraint attempts_task_check
-  check (task in ('wfd','rs','ra','di','rts','asq','swt','email','rwfib','rfib','ro','sst','lfib','hiw'));
+  check (task in ('wfd','rs','ra','di','rts','asq','swt','email','rwfib','rfib','ro','sst','lfib','hiw','gram'));
 
 -- Word pairs (collocations) collected automatically from missed fill-in-the-blank gaps.
 create table if not exists public.collocations (

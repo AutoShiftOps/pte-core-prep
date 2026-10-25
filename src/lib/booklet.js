@@ -51,5 +51,7 @@ export function planFor(day) {
   const p = BOOKLET[n] || (n > 36 ? { bt: 'full', note: 'After attempt 1: Big Three daily, plus your weakest task (see Trends).' } : { bt: false, note: 'Before the plan starts.' });
   const counts = { ...(p.bt === 'full' ? FULL : p.bt === 'light' ? LIGHT : {}) };
   for (const [k, v] of Object.entries(p.extra || {})) counts[k] = (counts[k] || 0) + v;
+  // Grammar gym (added Oct 25): 15 questions a day until the day before the exam.
+  if (n >= 9 && n <= 35) counts.gram = n === 35 ? 10 : 15;
   return { n, counts, note: p.note || '', bt: p.bt };
 }

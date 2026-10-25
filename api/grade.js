@@ -7,6 +7,8 @@
 
 // Official PTE Core scoring descriptors (PTE Core Score Guide, Jan 2024). Countable traits (form, spelling)
 // are computed here, not by the model: language models can't count words reliably.
+import { normalizeSpeech } from '../src/lib/score.js';
+
 const band = (n, two, one) => (two(n) ? 2 : one(n) ? 1 : 0);
 const RUBRIC = {
   email: {
@@ -51,6 +53,17 @@ vocabulary 2: appropriate choice of words | 1: some lexical errors, no hindrance
 
 // Same rule as the app's checklist: hyphenated words count as two ("four-day" = 2). That is the safe
 // side of Pearson's upper limits: an answer that passes here cannot be over the limit in the test.
+// Spoken answers arrive as a speech-recognition transcript: number words, capitals, punctuation and
+// hyphens are the software's, and some words are misheard. None of that is the speaker's error.
+const SPOKEN = new Set(['di', 'rts']);
+const SPOKEN_NOTE = `THE ANSWER IS A SPEECH-RECOGNITION TRANSCRIPT, NOT TYPED TEXT. Numbers may appear as words ("two thousand eighteen" = 2018, "eighty two percent" = 82%); capitals, punctuation and hyphens come from the software; some words are misheard (e.g. "Rosen" for "risen"). Never report spelling, number format, punctuation, capitals or hyphens. Report only what a listener would hear: grammar (e.g. "sales has"), wrong words or word forms, missing content. If a word looks misheard, say it may have been pronounced unclearly and give the intended word.`;
+const flat = (t) => normalizeSpeech(String(t || '')).toLowerCase().replace(/[^a-z0-9]+/g, '');
+const FORMAT_ONLY = /\b(spell|spelling|hyphen|punctuat|capital|numeric|number format|digits?)\b/i;
+/** Drop "errors" that are only transcript formatting (number words vs digits, hyphens, spelling of a misheard word). */
+export function spokenErrors(errors) {
+  return (errors || []).filter((e) => flat(e.original) !== flat(e.fix) && !(FORMAT_ONLY.test(e.why || '') && !/pronounc/i.test(e.why || '')));
+}
+
 export const countWords = (s) => String(s || '').replace(/[-–—]/g, ' ').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length;
 
 /** Form score as Pearson defines it, plus the capital-letters / no-punctuation rule. */
@@ -87,7 +100,7 @@ export function finalize(task, raw, answer, opts = {}) {
     traits, max: r.max, total, outOf: max,
     reasons: raw?.reasons || {},
     measured: { words: m.words, ...(r.spelling ? { spellingErrors: spellingErrors.length } : {}), ...(opts.coverage?.total ? { keyPoints: `${opts.coverage.hit}/${opts.coverage.total}` } : {}) },
-    errors: Array.isArray(raw?.errors) ? raw.errors.slice(0, 8) : [],
+    errors: Array.isArray(raw?.errors) ? (SPOKEN.has(task) ? spokenErrors(raw.errors) : raw.errors).slice(0, 8) : [],
     improved: typeof raw?.improved === 'string' ? raw.improved : '',
     tip: typeof raw?.tip === 'string' ? raw.tip : '',
   };
@@ -182,7 +195,7 @@ export default async function handler(req, res) {
     ? `\nFor "improved": rewrite the CANDIDATE'S OWN answer into this template. Keep their ideas, facts, names and any correct wording; fix the grammar. Do not invent dates, numbers or other facts. Copy the template's fixed phrases word for word, including the closing lines.${shape}\nTEMPLATE:\n${TEMPLATES[task]}`
     : '\nFor "improved": a corrected version of the candidate\'s own answer, keeping their ideas.';
   const system = `You are an experienced, strict but fair PTE Core rater. Score exactly as Pearson's descriptors say, no harsher and no kinder.
-${r.text}
+${r.text}${SPOKEN.has(task) ? '\n' + SPOKEN_NOTE : ''}
 MEASURED BY SOFTWARE (correct, do not re-count): ${m.words} words${'form' in m ? `; form = ${m.form}/2 (already scored)` : ''}${cov ? `; the app's key-point check found ${cov.hit} of ${cov.total} main points` : ''}.${reference && task !== 'email' ? `\nREFERENCE SUMMARY (an expert answer that earns full content marks; an answer covering the same main aspects also earns 2, whatever its wording): ${String(reference).slice(0, 600)}` : ''}${r.spelling ? '\nList EVERY spelling or typing error (a misspelt or mistyped word, not a grammar error) in "spellingErrors"; spelling is scored from that count.' : ''}
 Fixed template phrases (greetings, "I am writing to", "Firstly/Secondly/Finally", closing lines) are acceptable; only penalise memorised material when it replaces content about this prompt.
 For each trait you score, first write a reason of at most 15 words that quotes evidence from the answer, then the score.
