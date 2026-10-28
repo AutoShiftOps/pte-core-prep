@@ -30,6 +30,8 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 25 | AI rater (speaking) | Describe Image feedback "corrected" the transcript: "two thousand eighteen → 2018 (numeric format)", "Rosen → risen (spelling)", hyphens | Fixed: speaking rater told it reads a speech transcript; formatting-only corrections filtered out; misheard words reported as pronunciation |
 | Oct 28 | Describe Image | Checker marked "names both groups" and "highest point" wrong because speech gives "in store" and "two thousand eighteen" while labels say "In-store" and "2018"; 39 s was shown as fine though the conclusion was cut off | Fixed: spoken-form matching (number words, spoken years, hyphens); timing check flags over 38 s; 7-line template + axis rule in the drill tip |
 | Oct 28 | Summarize Written Text | App treated more than one sentence as a fatal error (an Academic rule); PTE Core's Score Guide only requires 25–50 words | Fixed: one sentence is now advice, not a rule; scoring follows the Core form band |
+| Oct 28 | AI rater (Describe Image) | Docked content for leaving out middle years (2020) and wrote the improved version in the old 5-line template; a punctuation-only correction slipped through the filter | Fixed: full-content rule (main features, trend, conclusion, not every data point); 7-line template enforced with 70-90 words; formatting filter catches "punctuation" |
+| Oct 28 | AI rater (Describe Image) | Improved version used one generic template for every chart, not the variant the user learned (trend, comparison, pie, two groups over time / across categories) | Fixed: chart type and bottom axis passed to the rater; it gets the exact lines 2-6 for that variant |
 
 ## Feature ideas
 

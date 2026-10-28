@@ -87,7 +87,7 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
   async function grade(row = saved, heard = out?.heard || '') {
     if (!heard) return;
     setGrading(true); setAi(null);
-    const g = await gradeAnswer(task, task === 'di' ? `Describe this chart: ${src.title} (${src.unit}). Labels: ${src.labels.join(', ')}. ${src.values ? 'Values: ' + src.values.join(', ') : src.series.map((s) => s.name + ': ' + s.values.join(', ')).join('; ')}` : src.text, heard);
+    const g = await gradeAnswer(task, task === 'di' ? `Describe this chart: ${src.title} (${src.unit}). Chart type: ${src.type}. Labels: ${src.labels.join(', ')}. ${src.values ? 'Values: ' + src.values.join(', ') : src.series.map((s) => s.name + ': ' + s.values.join(', ')).join('; ')}` : src.text, heard);
     setGrading(false);
     if (g) setAi(g);
     if (g && !g.error && row) await onPatch?.(row, { ai: g });

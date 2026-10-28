@@ -47,7 +47,7 @@ vocabulary 2: appropriate choice of words | 1: some lexical errors, no hindrance
   },
   di: {
     max: { content: 6 },
-    text: 'PTE Core Describe Image (spoken, transcribed by speech recognition, so ignore punctuation). content 0-6: main feature, key details with numbers, comparison or trend, conclusion.',
+    text: `PTE Core Describe Image (spoken, about 30-37 seconds). content 0-6. Full marks (6): says what the image shows, the main features (highest and lowest, or the main parts), at least one trend or comparison with correct numbers, and a conclusion. A 35-second answer CANNOT and should not cover every data point or every year: never deduct for leaving out minor values or middle years. Deduct only for a missing or wrong main feature, misread numbers, no trend or comparison, or no conclusion.`,
   },
 };
 
@@ -58,7 +58,7 @@ vocabulary 2: appropriate choice of words | 1: some lexical errors, no hindrance
 const SPOKEN = new Set(['di', 'rts']);
 const SPOKEN_NOTE = `THE ANSWER IS A SPEECH-RECOGNITION TRANSCRIPT, NOT TYPED TEXT. Numbers may appear as words ("two thousand eighteen" = 2018, "eighty two percent" = 82%); capitals, punctuation and hyphens come from the software; some words are misheard (e.g. "Rosen" for "risen"). Never report spelling, number format, punctuation, capitals or hyphens. Report only what a listener would hear: grammar (e.g. "sales has"), wrong words or word forms, missing content. If a word looks misheard, say it may have been pronounced unclearly and give the intended word.`;
 const flat = (t) => normalizeSpeech(String(t || '')).toLowerCase().replace(/[^a-z0-9]+/g, '');
-const FORMAT_ONLY = /\b(spell|spelling|hyphen|punctuat|capital|numeric|number format|digits?)\b/i;
+const FORMAT_ONLY = /\b(spell|hyphen|punctuat|capital|numeric|number format|digit)/i; // prefixes: spelling, punctuation, capitals…
 /** Drop "errors" that are only transcript formatting (number words vs digits, hyphens, spelling of a misheard word). */
 export function spokenErrors(errors) {
   return (errors || []).filter((e) => flat(e.original) !== flat(e.fix) && !(FORMAT_ONLY.test(e.why || '') && !/pronounc/i.test(e.why || '')));
@@ -133,8 +133,49 @@ Let me know what you think. Can't wait to hear from you!
 
 Best wishes,
 [Candidate's name]`,
-  di: '"The chart shows [topic]. The highest is [item] at [number]. The lowest is [item] at [number]. [One more detail or trend]. Overall, [conclusion]."',
+  di: `Seven short sentences, 70-90 words in total (about 35 seconds spoken). Say years the short way ("twenty eighteen").
+The [bar chart / line graph / pie chart / table / map / diagram / picture] shows [topic].
+The highest is [A] at [number].   (no numbers: The main feature is ... / The first stage is ...)
+The lowest is [B] at [number].    (no numbers: In contrast, ... / The final stage is ...)
+Another key detail is that [a trend, the second highest, or group 1's change].
+In addition, [a middle pair, or group 2's change].
+Compared with [B], [A] is about [twice] as [high].
+Overall, [the main pattern], which shows that [meaning].`,
 };
+
+// The Describe Image variant for this chart, so the improved version matches the one the user learned:
+// the bottom axis decides (time → trend lines; categories → comparison lines).
+const TIME_LABEL = /^((19|20)\d\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|week|day|month|year|\d{1,2}(am|pm|:\d\d))/i;
+export function diVariant(prompt) {
+  const type = (String(prompt).match(/Chart type:\s*(\w+)/i)?.[1] || '').toLowerCase();
+  const labels = (String(prompt).match(/Labels:\s*([^.]*(?:\.\d[^.]*)*)\./)?.[1] || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const time = labels.length > 1 && labels.every((l) => TIME_LABEL.test(l));
+  if (type === 'group' && time) return { key: 'two groups over time', lines: [
+    'The highest is [group] in [year] at [n].', 'The lowest is [group] in [year] at [n].',
+    'Another key detail is that [group 1] rose / fell from [first value] to [last value].',
+    'In addition, [group 2] fell / rose from [first value] to [last value].',
+    'Compared with [first year], [group 1] is about [twice] as high in [last year].'] };
+  if (type === 'group') return { key: 'two groups across categories', lines: [
+    'The highest is [group] in [category] at [n].', 'The lowest is [group] in [category] at [n].',
+    'Another key detail is that [group 1] lead in [category] and [category], at [n] and [n].',
+    'In addition, [category] is almost equal, with [n] [group 1] and [n] [group 2].',
+    'Compared with [group 2], [group 1] are about [three times] as likely to [verb + category].'] };
+  if (type === 'line' || time) return { key: 'trend over time', lines: [
+    'The highest is in [time], at [n].', 'The lowest is in [time], at [n].',
+    'Another key detail is that it rose / fell quickly between [time] and [time].',
+    'In addition, after [time] it [levelled off / fell slightly / kept rising].',
+    'Compared with [first time], [last time] is about [n times] as high.'] };
+  if (type === 'pie') return { key: 'parts of a whole', lines: [
+    'The highest is [biggest slice] at [n] percent.', 'The lowest is [smallest slice] at [n] percent.',
+    'Another key detail is that [second slice] is second at [n] percent.',
+    'In addition, [slice D] and [slice E] are both about [n] percent.',
+    'Compared with [slice D], [biggest slice] is about twice as large.'] };
+  return { key: 'comparison of categories', lines: [
+    'The highest is [tallest] at [n].', 'The lowest is [shortest] at [n].',
+    'Another key detail is that [second tallest] is second at [n].',
+    'In addition, [D] and [E] are in the middle, at about [n] and [n].',
+    'Compared with [shortest], [tallest] is about [n times] as large.'] };
+}
 
 // Fixed phrases the improved version must contain, word for word (the booklet's templates).
 const FIXED = {
@@ -142,6 +183,7 @@ const FIXED = {
   informal: ["I hope you're doing well.", "I'm writing to", 'First of all,', 'Also,', 'On top of that,', 'Let me know what you think.', "Can't wait to hear from you!", 'Best wishes,'],
   swt: ['The passage explains that', 'highlighting that', 'which suggests that'],
   sst: ['The speaker discussed', 'explaining that', 'which shows'],
+  di: ['shows', 'Another key detail is that', 'In addition,', 'Overall,', 'which shows that'],
 };
 const norm = (t) => String(t || '').replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
 export const registerOf = (prompt) => (/Register:\s*informal/i.test(prompt || '') ? 'informal' : 'formal');
@@ -158,6 +200,7 @@ export function templateProblems(task, improved, prompt) {
     if (n < 90 || n > 120) out.push(`is ${n} words; it must be 100-110`);
   }
   if ((task === 'swt' || task === 'sst') && (t.match(/[.!?](\s|$)/g) || []).length > 1) out.push('must be one sentence');
+  if (task === 'di') { const n = countWords(improved); if (n < 65 || n > 95) out.push(`is ${n} words; it must be 70-90 so it fits in about 35 seconds`); }
   return out;
 }
 
@@ -192,7 +235,7 @@ export default async function handler(req, res) {
     ? `\nUse the ${register.toUpperCase()} template. ${register === 'formal' ? 'Firstly' : 'First of all'} = bullet 1${bullets[0] ? ` (${bullets[0]})` : ''}, ${register === 'formal' ? 'Secondly' : 'Also'} = bullet 2${bullets[1] ? ` (${bullets[1]})` : ''}, ${register === 'formal' ? 'Finally' : 'On top of that'} = bullet 3${bullets[2] ? ` (${bullets[2]})` : ''}. Exactly three points: no "Additionally" and no extra points. The purpose line states the request only. Do not add ideas the candidate did not write; if a bullet is missing, add one short sentence for it based on the prompt.`
     : '';
   const template = TEMPLATES[task]
-    ? `\nFor "improved": rewrite the CANDIDATE'S OWN answer into this template. Keep their ideas, facts, names and any correct wording; fix the grammar. Do not invent dates, numbers or other facts. Copy the template's fixed phrases word for word, including the closing lines.${shape}\nTEMPLATE:\n${TEMPLATES[task]}`
+    ? `\nFor "improved": rewrite the CANDIDATE'S OWN answer into this template. Keep their ideas, facts, names and any correct wording; fix the grammar. Do not invent dates, numbers or other facts. Copy the template's fixed phrases word for word, including the closing lines.${shape}\nTEMPLATE:\n${TEMPLATES[task]}${task === 'di' ? (() => { const v = diVariant(prompt); return `\nTHIS CHART IS "${v.key.toUpperCase()}": use exactly these lines 2-6 (then the Overall line):\n${v.lines.join('\n')}`; })() : ''}`
     : '\nFor "improved": a corrected version of the candidate\'s own answer, keeping their ideas.';
   const system = `You are an experienced, strict but fair PTE Core rater. Score exactly as Pearson's descriptors say, no harsher and no kinder.
 ${r.text}${SPOKEN.has(task) ? '\n' + SPOKEN_NOTE : ''}

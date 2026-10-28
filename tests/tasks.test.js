@@ -291,3 +291,28 @@ test('Describe Image checker: spoken years, number words and "in store" count as
   const late = judgeDi(heard, d, { durationMs: 39000 }).checks.at(-1);
   assert.equal(late.ok, false); assert.match(late.label, /cut-off/);
 });
+
+test('AI grader: Describe Image improved version must follow the 7-line template', async () => {
+  const { templateProblems, spokenErrors } = await import('../api/grade.js');
+  const good = 'The bar chart shows the share of retail sales online and in store from twenty eighteen to twenty twenty-four. The highest is in-store sales in twenty eighteen at 82 percent. The lowest is online sales in twenty eighteen at 18 percent. Another key detail is that online sales rose from 18 to 35 percent. In addition, in-store sales fell from 82 to 65 percent, with a small rise in twenty twenty-two. Overall, shopping is moving online, which shows that retailers need a strong online presence.';
+  assert.deepEqual(templateProblems('di', good, ''), []);
+  const old = 'The chart shows the share of retail sales. The highest is in-store at 82 percent. Overall, shopping is moving online.';
+  assert.ok(templateProblems('di', old, '').some((p) => p.includes('Another key detail')));
+  assert.equal(spokenErrors([{ original: 'x y', fix: 'x, y.', why: 'unclear phrasing, missing years, punctuation errors' }]).length, 0);
+});
+
+test('AI grader: Describe Image variant follows the bottom axis and chart type', async () => {
+  const { diVariant } = await import('../api/grade.js');
+  const p = (type, labels) => `Describe this chart: X (%). Chart type: ${type}. Labels: ${labels}. Values: 1, 2`;
+  assert.equal(diVariant(p('group', '2018, 2020, 2022, 2024')).key, 'two groups over time');
+  assert.equal(diVariant(p('group', 'Engineering, Nursing, Business')).key, 'two groups across categories');
+  assert.equal(diVariant(p('line', 'Jan, Feb, Mar')).key, 'trend over time');
+  assert.equal(diVariant(p('bar', '2019, 2020, 2021')).key, 'trend over time');
+  assert.equal(diVariant(p('pie', 'Bus, Car, Walking')).key, 'parts of a whole');
+  assert.equal(diVariant(p('bar', 'Vancouver, Toronto')).key, 'comparison of categories');
+  // every chart in the app maps to a variant whose lines 4-6 use the fixed openers
+  for (const d of ITEMS.di) {
+    const v = diVariant(p(d.type, d.labels.join(', ')));
+    assert.ok(v.lines[2].startsWith('Another key detail is that') && v.lines[3].startsWith('In addition,') && v.lines[4].startsWith('Compared with'), d.title);
+  }
+});
