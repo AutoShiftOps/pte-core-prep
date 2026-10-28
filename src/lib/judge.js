@@ -1,6 +1,6 @@
 // Automatic checks for the non-dictation tasks. Objective tasks are scored exactly like PTE;
 // open tasks (summaries, email, spoken answers) get rule-based checks on form and key points.
-import { canon, words, cleanWord } from './score.js';
+import { canon, words, cleanWord, normalizeSpeech, numToWords } from './score.js';
 
 const lower = (s) => (s || '').toLowerCase();
 
@@ -39,11 +39,12 @@ export function judgeSwt(text, item) {
   const n = wordCount(text);
   const trimmed = text.trim();
   const sentenceEnds = (trimmed.match(/[.!?](\s|$)/g) || []).length;
-  const form = n >= 25 && n <= 50 && sentenceEnds <= 1;
+  // PTE Core's form rule is 25-50 words only (Score Guide); one sentence is our template's choice, not a Pearson rule.
+  const form = n >= 25 && n <= 50;
   const cov = coverage(text, item.points);
   const checks = [
     { ok: n >= 25 && n <= 50, label: `Word count ${n} (must be 25–50)`, fatal: true },
-    { ok: sentenceEnds <= 1, label: sentenceEnds <= 1 ? 'One sentence' : `${sentenceEnds} sentences: PTE expects one`, fatal: true },
+    { ok: sentenceEnds <= 1, label: sentenceEnds <= 1 ? 'One sentence (the booklet template)' : `${sentenceEnds} sentences: allowed in PTE Core, but the one-sentence template is safer for grammar` },
     { ok: /^[A-Z]/.test(trimmed) && /\.$/.test(trimmed), label: 'Starts with a capital letter and ends with a full stop' },
     { ok: /\b(and|but|while|which|so|because|although|whereas)\b/i.test(text), label: 'Uses connectors to join ideas' },
   ];
@@ -109,9 +110,23 @@ export function diFacts(d) {
   return facts;
 }
 
+// Speech comes back as words ("two thousand eighteen", "in store"); chart labels are digits and hyphens
+// ("2018", "In-store"). Compare both in one spoken form so a correct answer is never marked wrong.
+const spoken = (s) => ' ' + normalizeSpeech(lower(s).replace(/[-–—]/g, ' ')).replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+function variants(k) {
+  const out = [k];
+  const y = String(k).trim().match(/^(19|20)(\d\d)$/);
+  if (y) {
+    const n = Number(k), tail = Number(y[2]);
+    out.push(numToWords(n)); // two thousand eighteen
+    out.push((y[1] === '20' ? 'twenty ' : 'nineteen ') + (tail === 0 ? 'hundred' : tail < 10 ? 'oh ' + numToWords(tail) : numToWords(tail))); // twenty eighteen
+  }
+  return out;
+}
 function hits(text, fact) {
-  const t = ' ' + lower(text) + ' ';
-  return fact.all ? fact.kw.every((k) => t.includes(k)) : fact.kw.some((k) => t.includes(k.replace(/–/g, ' to ')) || t.includes(k));
+  const t = spoken(text);
+  const has = (k) => variants(k).some((v) => t.includes(spoken(v)));
+  return fact.all ? fact.kw.every(has) : fact.kw.some(has);
 }
 
 export function judgeDi(heard, d, take) {
@@ -119,7 +134,9 @@ export function judgeDi(heard, d, take) {
   const dur = take.durationMs / 1000;
   const checks = [
     ...facts.map((f) => ({ ok: f.ok, label: f.label })),
-    { ok: dur >= 30, label: `Spoke for ${dur.toFixed(0)} s (aim for 35–40 s)` },
+    dur > 38
+      ? { ok: false, label: `Spoke for ${dur.toFixed(0)} s: too close to the 40 s cut-off, so your last words may be lost. Aim for 30–37 s` }
+      : { ok: dur >= 30, label: `Spoke for ${dur.toFixed(0)} s (aim for 30–37 s)` },
   ];
   return { kind: 'di', checks, score: facts.filter((f) => f.ok).length, total: facts.length };
 }

@@ -28,6 +28,8 @@ Status: **Fixed** (shipped) · **Open** (to do) · **Idea** (product thinking)
 | Oct 24 | Trends | Weekly scorecard showed the same task as biggest win AND biggest leak (Read Aloud 100%) early in a week | Fixed: leak = weakest task still below target, never the win; "None: every task at target" otherwise |
 | Oct 25 | Answer Short Question | Azure got the expected answer as a script and biased recognition towards it: "hear" came back as "hearing", "architic" as "Antarctica", so wrong answers were marked correct | Fixed: free (unscripted) recognition; near-miss note for the wrong word form. Watch: Repeat Sentence / Read Aloud stay scripted (needed for pronunciation scores); Day 7 logs show omissions are still caught |
 | Oct 25 | AI rater (speaking) | Describe Image feedback "corrected" the transcript: "two thousand eighteen → 2018 (numeric format)", "Rosen → risen (spelling)", hyphens | Fixed: speaking rater told it reads a speech transcript; formatting-only corrections filtered out; misheard words reported as pronunciation |
+| Oct 28 | Describe Image | Checker marked "names both groups" and "highest point" wrong because speech gives "in store" and "two thousand eighteen" while labels say "In-store" and "2018"; 39 s was shown as fine though the conclusion was cut off | Fixed: spoken-form matching (number words, spoken years, hyphens); timing check flags over 38 s; 7-line template + axis rule in the drill tip |
+| Oct 28 | Summarize Written Text | App treated more than one sentence as a fatal error (an Academic rule); PTE Core's Score Guide only requires 25–50 words | Fixed: one sentence is now advice, not a rule; scoring follows the Core form band |
 
 ## Feature ideas
 

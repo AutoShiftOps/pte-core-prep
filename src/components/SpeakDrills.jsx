@@ -102,7 +102,20 @@ export function OpenSpeakDrill({ task, items, bank, day, dayAttempts, onAttempt,
       <div className="cardhead"><h2>{task === 'di' ? 'Describe Image' : 'Respond to a Situation'}{focus ? ' · focus drill' : ''}</h2><span className="muted small">Item {idx + 1} of {items.length} · {doneCount} done</span></div>
       <div className="how">
         {task === 'di'
-          ? <><b>Speaking.</b> 25 seconds to study the chart, then 40 seconds to speak. Template: what it shows → highest → lowest → one more detail or trend → overall conclusion. Keep talking for the full time.</>
+          ? <><b>Speaking.</b> 25 seconds to study the image, then up to 40 seconds to speak. Finish between 30 and 37 seconds so the end isn't cut off.
+            <details className="tips"><summary>The 7-line template</summary>
+              <p><b>First check the bottom axis:</b> years → describe each group's trend (rose from… to…); categories → compare them.</p>
+              <ol>
+                <li><b>The</b> [bar chart / line graph / pie chart / table / map / diagram / picture] <b>shows</b> [topic].</li>
+                <li><b>The highest is</b> [A] <b>at</b> [n]. (no numbers: <b>The main feature is</b>… / <b>The first stage is</b>…)</li>
+                <li><b>The lowest is</b> [B] <b>at</b> [n]. (no numbers: <b>In contrast,</b>… / <b>The final stage is</b>…)</li>
+                <li><b>Another key detail is that</b> [trend, second highest or group 1's change].</li>
+                <li><b>In addition,</b> [middle pair, or group 2's change].</li>
+                <li><b>Compared with</b> [B], [A] <b>is about</b> [twice] <b>as</b> [high]. (skip it after about 25 s)</li>
+                <li><b>Overall,</b> [pattern], <b>which shows that</b> [meaning].</li>
+              </ol>
+              <p>Years: say "twenty eighteen", not "two thousand eighteen": shorter, so you finish in time.</p>
+            </details></>
           : <><b>Speaking.</b> Listen, read, then 20 seconds to plan: formal or informal? Then 40 seconds. Cover every part of the situation, be polite, and keep going even if you make a mistake.</>}
       </div>
       {item.kind && item.kind !== 'new' && <Chip tone={item.kind === 'review' ? 'warn' : ''}>{KIND_LABEL[item.kind]}</Chip>}

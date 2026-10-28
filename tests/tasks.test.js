@@ -280,3 +280,14 @@ test('AI grader: spoken answers are not marked for number words, spelling or hyp
   ];
   assert.deepEqual(spokenErrors(raw).map((e) => e.fix), ['has declined', 'online sales have picked up', 'risen']);
 });
+
+test('Describe Image checker: spoken years, number words and "in store" count as correct', () => {
+  const d = { type: 'group', title: 'Share of retail sales: online versus in-store', unit: '%', labels: ['2018', '2020', '2022', '2024'],
+    series: [{ name: 'Online', values: [18, 31, 29, 35] }, { name: 'In-store', values: [82, 69, 71, 65] }] };
+  const heard = 'The bar chart shows the share of retail sales online and in store from two thousand eighteen to two thousand twenty four. The highest is in store sales in two thousand eighteen at eighty two percent. Overall shopping is moving online.';
+  const r = judgeDi(heard, d, { durationMs: 34000 });
+  assert.ok(r.checks.every((c) => c.ok), JSON.stringify(r.checks.filter((c) => !c.ok)));
+  assert.ok(judgeDi('The highest is in store in twenty eighteen. Online too.', d, { durationMs: 34000 }).checks.find((c) => /highest/.test(c.label)).ok);
+  const late = judgeDi(heard, d, { durationMs: 39000 }).checks.at(-1);
+  assert.equal(late.ok, false); assert.match(late.label, /cut-off/);
+});
